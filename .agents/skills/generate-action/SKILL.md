@@ -54,13 +54,10 @@ Always generate an action in the context of its target process XML.
     - Logic that is a whole service (e.g. OCR of a document) is a plugin: use the
       `write-plugin` skill, then call it from the action as
       `Plugin.<artifactId>.<entryPoint>.<method>(args)`.
-6. **Validate the action:** call `validate_action` with the CDATA content of the
-   action (check the tool schema for other parameters, such as the version).
-   Fix reported errors and re-run until clean.
-7. **Insert:** put the code in CDATA with a unique `id` (`actionN`, as in the
+6. **Insert:** put the code in CDATA with a unique `id` (`actionN`, as in the
    process). If the user asked only for code, return the XML snippet and its
    location instead of editing the file.
-8. **Validate the process:** run Stage 1 of the `test-process` skill (`validate_process`). It also validates every
+7. **Validate the process:** run Stage 1 of the `test-process` skill (`validate_process`). It also validates every
    action in the process, so
    fix anything reported for other actions that your change touches.
 
@@ -74,6 +71,7 @@ other reflection programming.
 Event `set` on field `name`, filling `greeting`:
 
 ```xml
+
 <event type="set">
     <id>name_set</id>
     <actions phase="post">
@@ -106,11 +104,6 @@ Cause: it does not exist in this Petriflow version.
 Solution: do not invent it. Combine listed methods, move the logic into a
 function, or, for a whole service, use the `write-plugin` skill.
 
-**`validate_action` reports an unknown field or transition.**
-Cause: a mapping refers to an id that is not in the process XML.
-Solution: fix the id from the process XML, or add the field/transition to the
-process first (with `generate-process` if the net must change).
-
 ## Output
 
 The action XML, where it was placed (event, phase), a one-line description of
@@ -129,4 +122,3 @@ what it does, the API methods used, and the validation results.
 - Wrong phase (`pre` vs `post`).
 - Always returning a new value from `change ... value`: return `unchanged`
   when nothing changes, otherwise set-event actions on that field fire again.
-- Skipping `validate_action` and finding errors only at process validation.

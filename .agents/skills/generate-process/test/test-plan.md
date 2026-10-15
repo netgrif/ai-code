@@ -16,7 +16,7 @@ Three parts:
 ## Prerequisites
 
 - Petriflow MCP reachable from the agent harness (`petriflow://versions`,
-  `validate_process`, `validate_action` respond). If it is not, stop. Do not
+  `validate_process` respond). If it is not, stop. Do not
   run with a fake or simulated MCP.
 - For Stage 2 checks only: local NAE running (`curl localhost:8080/manage/health`
   returns `UP`) and the `local-nae` MCP connected.
@@ -56,29 +56,29 @@ queries.
 
 Should trigger:
 
-| ID  | Query                                                                       |
-|-----|-----------------------------------------------------------------------------|
-| T1  | "Create a Petriflow process for vacation requests."                         |
-| T2  | "Model our invoice approval workflow for NAE."                              |
-| T3  | "I need a Petri net where a clerk checks an order and a manager signs it."  |
-| T4  | "Add a review step to processes/hello_world/hello_world.xml."               |
-| T5  | "Design the processes for a room booking app on Netgrif."                   |
-| T6  | "Split this application into several Petriflow processes."                  |
-| T7  | "Turn this BPMN description into a Petriflow model: …"                      |
-| T8  | "Make a process where each reviewer gets their own task privately."        |
-| T9  | "Build a registry of customers other processes can reference."              |
-| T10 | "Generate the XML for an onboarding workflow."                              |
+| ID   | Query                                                                      |
+|------|----------------------------------------------------------------------------|
+| T1   | "Create a Petriflow process for vacation requests."                        |
+| T2   | "Model our invoice approval workflow for NAE."                             |
+| T3   | "I need a Petri net where a clerk checks an order and a manager signs it." |
+| T4   | "Add a review step to processes/hello_world/hello_world.xml."              |
+| T5   | "Design the processes for a room booking app on Netgrif."                  |
+| T6   | "Split this application into several Petriflow processes."                 |
+| T7   | "Turn this BPMN description into a Petriflow model: …"                     |
+| T8   | "Make a process where each reviewer gets their own task privately."        |
+| T9   | "Build a registry of customers other processes can reference."             |
+| T10  | "Generate the XML for an onboarding workflow."                             |
 | T10a | "Create a new application for room booking in processes/."                 |
 
 Should not trigger (expected skill in brackets):
 
-| ID  | Query                                                                          |
-|-----|--------------------------------------------------------------------------------|
+| ID  | Query                                                                              |
+|-----|------------------------------------------------------------------------------------|
 | T11 | "Write an action that computes the total when quantity changes." (generate-action) |
-| T12 | "Validate processes/hello_world/hello_world.xml." (test-process)              |
-| T13 | "Deploy hello_world/hello_world to the local NAE and run a case." (test-process) |
-| T14 | "Create a custom Angular component for a signature field." (write-component)  |
-| T15 | "Write an NAE plugin that does OCR." (write-plugin)                           |
+| T12 | "Validate processes/hello_world/hello_world.xml." (test-process)                   |
+| T13 | "Deploy hello_world/hello_world to the local NAE and run a case." (test-process)   |
+| T14 | "Create a custom Angular component for a signature field." (write-component)       |
+| T15 | "Write an NAE plugin that does OCR." (write-plugin)                                |
 
 ## Performance comparison (P)
 
@@ -90,22 +90,22 @@ when they come from step 2 of the skill.
 
 ## Global checks (apply to every scenario)
 
-| ID  | Check                                                                                                     |
-|-----|-----------------------------------------------------------------------------------------------------------|
-| G1  | Read `petriflow://versions` (or `list_versions`) and used the latest semver, or a pinned one              |
-| G2  | Read `petriflow://versions/{version}/overview` before writing XML                                         |
-| G3  | Got schema/examples from the MCP; no element or attribute that the schema rejects                         |
-| G4  | Asked for missing facts (who fills which field, concurrency, privacy) instead of inventing them           |
+| ID  | Check                                                                                                            |
+|-----|------------------------------------------------------------------------------------------------------------------|
+| G1  | Read `petriflow://versions` (or `list_versions`) and used the latest semver, or a pinned one                     |
+| G2  | Read `petriflow://versions/{version}/overview` before writing XML                                                |
+| G3  | Got schema/examples from the MCP; no element or attribute that the schema rejects                                |
+| G4  | Asked for missing facts (who fills which field, concurrency, privacy) instead of inventing them                  |
 | G5  | File `processes/<app_name>/<process_name>.xml`; id `<app_name>/<process_name>`, both snake_case, prefix = folder |
-| G6  | `validate_process` ran after each written/changed file; errors fixed and re-validated until clean         |
-| G7  | No deploy/create case/execute task without one approval of the full scenario (per `test-process`)         |
-| G8  | Before the first action: asked once whether to write actions in a subagent; then used `generate-action`   |
-| G9  | Each action passed `validate_action`; no Grape, metaClass or reflection                                   |
-| G10 | Final report: version, architecture, files, validation results, Stage 2 result or why skipped, deviations |
-| G11 | Principle review (P1–P9, C1–C5, A1–A3) included; each deviation has a reason                              |
-| G12 | Architecture presented and approved by the user before any XML was written                                |
-| G13 | Existing applications read first (`processes/*/README.md`); new id checked unique against `processes/*/*.xml` |
-| G14 | `processes/<app_name>/README.md` created or updated for every touched application, matching the template |
+| G6  | `validate_process` ran after each written/changed file; errors fixed and re-validated until clean                |
+| G7  | No deploy/create case/execute task without one approval of the full scenario (per `test-process`)                |
+| G8  | Before the first action: asked once whether to write actions in a subagent; then used `generate-action`          |
+| G9  | no Grape, metaClass or reflection in actions                                                                     |
+| G10 | Final report: version, architecture, files, validation results, Stage 2 result or why skipped, deviations        |
+| G11 | Principle review (P1–P9, C1–C5, A1–A3) included; each deviation has a reason                                     |
+| G12 | Architecture presented and approved by the user before any XML was written                                       |
+| G13 | Existing applications read first (`processes/*/README.md`); new id checked unique against `processes/*/*.xml`    |
+| G14 | `processes/<app_name>/README.md` created or updated for every touched application, matching the template         |
 
 ## Scenarios
 

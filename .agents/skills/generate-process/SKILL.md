@@ -26,21 +26,20 @@ validated.
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
 - `validate_process` after every change to a process file, until clean.
-- Deploying, creating cases and executing tasks need user approval
-  (`test-process` Stage 2).
+- Deploying, creating cases and executing tasks need user approval (`test-process` Stage 2).
 
 ## Steps
 
-0. **Precondition.** The `petriflow` MCP must answer. If it does not, see
+1. **Precondition.** The `petriflow` MCP must answer. If it does not, see
    Troubleshooting; never write XML from memory.
-1. **Version and language.**
+2. **Version and language.**
     - Read `petriflow://versions` (or tool `list_versions`) and take the latest
       semver, unless the user or project pins one.
     - Read `petriflow://versions/{version}/overview`.
     - List the MCP resources and resource templates; read the schema and the
       examples for that version that match the problem (e.g. arcs, roles,
       caseRef, taskRef, user lists).
-2. **Read the existing applications, then analyse the requirement.**
+3. **Read the existing applications, then analyse the requirement.**
     - List `processes/*/` and read each application's `README.md`. Note the
       existing process ids, roles and data-centric processes; reuse them
       instead of creating duplicates.
@@ -48,36 +47,36 @@ validated.
       many users act at the same time, what users must not see of each other,
       and which data outlives one run. Ask the user for any of these that the
       requirement does not state.
-3. **Make every transition atomic.** A transition is either one user filling
+4. **Make every transition atomic.** A transition is either one user filling
    one form, or a system transition with no user (P8). Split steps until this
    holds. The result is the *flat model*.
-4. **Decide the architecture** with the tables below. Then present it to the
+5. **Decide the architecture** with the tables below. Then present it to the
    user: each process (full id, application, kind, purpose), its roles,
    channels (sender transition → receiver system transition), caseRef/taskRef
    links, dependencies on processes of other applications, and file paths
-   `processes/<app_name>/<process_name>.xml`.
-   **Write no XML until the user approves the architecture.** A single process
+   `processes/<app_name>/<process_name>.xml`. **Write no XML until the user approves the architecture.** A single
+   process
    still goes through this gate (one short line is enough).
-5. **Write the XML**, data-centric processes first, then the processes that
+6. **Write the XML**, data-centric processes first, then the processes that
    reference them. Follow the schema and the naming rules below. Per process:
    places, transitions, arcs, roles and permissions, data, forms (data groups),
    event stubs. Channels and taskRef embedding: see Quick reference.
-6. **Actions.** Before the first action, ask the user once per session:
+7. **Actions.** Before the first action, ask the user once per session:
    "Should the actions be written by a subagent, or inline here?" Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
    pass: process file path, event and phase, what the action must do, and the
    ids of fields/transitions/processes it uses.
-7. **Test regularly** with the `test-process` skill:
+8. **Test regularly** with the `test-process` skill:
     - Stage 1 (`validate_process`) after each process file is written or
       changed, and after each batch of actions. Fix and re-validate until clean.
     - Stage 2 (live run on local NAE) once at the end, only with the user's
       approval. Deploy referenced processes before the ones that reference them,
       also across applications.
-8. **Review** against the checklist in `references/modeling-principles.md`.
+9. **Review** against the checklist in `references/modeling-principles.md`.
    Fix violations or list them with a reason.
-9. **Application README.** Create or update `processes/<app_name>/README.md`
-   for every application you touched (template below).
-10. **Report** (see Output).
+10. **Application README.** Create or update `processes/<app_name>/README.md`
+    for every application you touched (template below).
+11. **Report** (see Output).
 
 Before step 4, when the requirement has more than one actor or more than one
 entity, read `references/modeling-principles.md`. It contains:
@@ -90,15 +89,15 @@ entity, read `references/modeling-principles.md`. It contains:
 
 ## Architecture decision
 
-| Signal in the requirement                                                  | Model it as                                                                 |
-|----------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| One flow, a fixed set of forms, roles separate users well enough           | One process                                                                 |
-| n users act in parallel, each on their own form, n known only at runtime   | One process per user (case per user), created by the coordinator (Prop. 2)  |
-| Users with the same role must not see each other's data                    | Separate cases bound to their user (user list), not roles alone (P9)        |
-| An entity that lives longer than one run (room, customer, contract)        | Data-centric process on the CRUD template (P6)                              |
-| Groups of transitions that share no data field                             | Separate processes joined by channels (P1, P2)                              |
-| The same form needed in several processes                                  | Define it once, embed it with taskRef (P5)                                  |
-| A whole service (OCR, external system)                                     | Plugin (`write-plugin`), not a process                                      |
+| Signal in the requirement                                                | Model it as                                                                |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| One flow, a fixed set of forms, roles separate users well enough         | One process                                                                |
+| n users act in parallel, each on their own form, n known only at runtime | One process per user (case per user), created by the coordinator (Prop. 2) |
+| Users with the same role must not see each other's data                  | Separate cases bound to their user (user list), not roles alone (P9)       |
+| An entity that lives longer than one run (room, customer, contract)      | Data-centric process on the CRUD template (P6)                             |
+| Groups of transitions that share no data field                           | Separate processes joined by channels (P1, P2)                             |
+| The same form needed in several processes                                | Define it once, embed it with taskRef (P5)                                 |
+| A whole service (OCR, external system)                                   | Plugin (`write-plugin`), not a process                                     |
 
 Every cut costs a channel. Cut only when a row above applies.
 
@@ -108,18 +107,17 @@ An application is a folder `processes/<app_name>/` with process XMLs and a
 `README.md`. It only separates business logic: all deployed processes can
 reference each other, regardless of application.
 
-| Rule              | Value                                                                          |
-|-------------------|--------------------------------------------------------------------------------|
-| Application name  | snake_case; the folder name equals it                                          |
-| Process id        | `<app_name>/<process_name>`, both parts snake_case, e.g. `room_booking/reservation` |
-| Uniqueness        | Unique across the whole NAE deployment: check every `processes/*/*.xml` first   |
-| File              | `processes/<app_name>/<process_name>.xml`                                      |
-| References        | Other processes and actions use the full id (caseRef targets, case creation)   |
+| Rule             | Value                                                                               |
+|------------------|-------------------------------------------------------------------------------------|
+| Application name | snake_case; the folder name equals it                                               |
+| Process id       | `<app_name>/<process_name>`, both parts snake_case, e.g. `room_booking/reservation` |
+| Uniqueness       | Unique across the whole NAE deployment: check every `processes/*/*.xml` first       |
+| File             | `processes/<app_name>/<process_name>.xml`                                           |
+| References       | Other processes and actions use the full id (caseRef targets, case creation)        |
 
 Which application:
 
-- Add to an existing application when the process serves its business area
-  (same change driver, P1).
+- Add to an existing application when the process serves its business area (same change driver, P1).
 - Create a new application for a separate business area with its own change
   driver. Ask the user for the application name if it is not obvious.
 - An entity shared by several applications (e.g. a customer) lives once, in the
@@ -156,16 +154,16 @@ no links to other cases).
 
 ## Quick reference
 
-| Need                                 | Source                                                         |
-|--------------------------------------|----------------------------------------------------------------|
-| Versions                             | `petriflow://versions` / `list_versions`                       |
-| Overview of a version                | `petriflow://versions/{version}/overview`                      |
-| Schema, examples                     | MCP resource list / templates for that version                 |
-| Action API                           | `generate-action` skill (`list_actions`, `get_action`)         |
-| Validate                             | `test-process` skill (`validate_process`, `validate_action`)   |
+| Need                  | Source                                                 |
+|-----------------------|--------------------------------------------------------|
+| Versions              | `petriflow://versions` / `list_versions`               |
+| Overview of a version | `petriflow://versions/{version}/overview`              |
+| Schema, examples      | MCP resource list / templates for that version         |
+| Action API            | `generate-action` skill (`list_actions`, `get_action`) |
+| Validate              | `test-process` skill (`validate_process`)              |
 
-- **Channel:** an action of the sender navigates one caseRef field and fires a
-  *system transition* in the referenced case. A system transition has no role
+- **Channel:** an action of the sender navigates one caseRef field and fires a *system transition* in the referenced
+  case. A system transition has no role
   permission and no user binding; check that default/anonymous roles do not
   grant it either.
 - **Counter pattern:** the coordinator waits for n per-user cases with a
@@ -190,10 +188,10 @@ Result: one validated process, the application README and a report.
 **Example 2: decomposition.**
 User says: "Every tutor ranks every session slot privately, then an algorithm
 assigns tutors and the associate corrects the result."
-Actions: the number of tutors is runtime data and rankings are private
-(Prop. 2, P9) → propose application `tutor_assignment` with a coordinating
-process, one process per tutor bound to its user, and data-centric processes
-(slot, tutor, priority), e.g. `tutor_assignment/tutor_priorities` → user
+Actions: the number of tutors is runtime data and rankings are private (Prop. 2, P9) → propose application
+`tutor_assignment` with a coordinating
+process, one process per tutor bound to its user, and data-centric processes (slot, tutor, priority), e.g.
+`tutor_assignment/tutor_priorities` → user
 approves → data-centric XML first, then the coordinator and the per-tutor
 process → actions via `generate-action` → validate each file → README.
 Result: several validated processes with channels; see the worked example in
@@ -236,8 +234,8 @@ another process name and confirm it with the user.
 
 Petriflow version used; the approved architecture (applications, full process
 ids); files written, including application READMEs; per file the
-`validate_process` result (issues → fixes → clean); actions written and their
-`validate_action` results; Stage 2 result or why it did not run; principle
+`validate_process` result (issues → fixes → clean); actions written;
+Stage 2 result or why it did not run; principle
 deviations with reasons.
 
 ## Common mistakes

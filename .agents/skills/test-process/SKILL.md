@@ -23,19 +23,19 @@ edits see Stage 1, step 5.
 
 ## Stage 1: Validate (petriflow MCP)
 
-0. If the Petriflow MCP does not answer, say so and stop. Never replace
+1. If the Petriflow MCP does not answer, say so and stop. Never replace
    validation with reading the XML by eye.
-1. Get the available Petriflow versions: read resource `petriflow://versions`;
+2. Get the available Petriflow versions: read resource `petriflow://versions`;
    if resources aren't provided, call `list_versions`. Versions follow semver.
    Use the latest, unless the user or project pins another.
-2. Call `validate_process` with that version and the raw XML (check the tool
+3. Call `validate_process` with that version and the raw XML (check the tool
    schema for exact parameter names).
-3. For every returned issue: quote it, locate the element in the XML, and
+4. For every returned issue: quote it, locate the element in the XML, and
    propose a concrete fix as a diff. Group related issues.
-4. If validation against the latest version fails on constructs that belong to
+5. If validation against the latest version fails on constructs that belong to
    an older Petriflow release, report it and ask whether to migrate the process
    to the latest version or pin the older one. Do not choose silently.
-5. Apply the fixes, then re-validate the updated XML. Repeat until there are no
+6. Apply the fixes, then re-validate the updated XML. Repeat until there are no
    errors. Report remaining warnings.
     - A file the agent is writing in the current task (e.g. from
       `generate-process` or `generate-action`): apply fixes directly and list

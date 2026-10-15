@@ -47,8 +47,8 @@ the frontmatter.
 
 ## MCP servers
 
-- `petriflow` is run locally `localhost:3000`. Use it to validate (`validate_process`,
-  `validate_action`) and to look up Petriflow versions and Action API.
+- `petriflow` is run locally `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow versions
+  and Action API.
   Never write Petriflow or Action API syntax from memory.
 - `local-nae` works only while NAE runs on `localhost:8080`.
   If it is not reachable, say so and stop. Do not fake results.
@@ -130,7 +130,7 @@ A change is done only when the relevant checks pass and you have seen the output
 
 | Change           | Check                                                                                                             |
 |------------------|-------------------------------------------------------------------------------------------------------------------|
-| Process / action | `validate_action` per action, `validate_process`, then a live scenario with the `test-process` skill              |
+| Process / action | `validate_process`, then a live scenario with the `test-process` skill                                            |
 | Frontend         | `npm run lint`, `npm run build`, `npm test` (Karma, needs a browser) in `nae/nae-frontend`                        |
 | Plugin           | `mvn -f plugins/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |
 
