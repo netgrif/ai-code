@@ -1,69 +1,56 @@
-# Frontend
+# Netgrif Application Engine Frontend Starter
 
-Angular 17 application for your Netgrif Platform app, built on the
-[`@netgrif/components`](https://github.com/netgrif/components) library. It shows cases and tasks of your processes and
-handles login, navigation and user profiles. For the overall project, see the [main README](../../README.md).
+This is a frontend starter project for [Netgrif Application Engine](https://github.com/netgrif/components) to display
+your NAE based application, manage your processes, cases and tasks.
 
-## Requirements
+It helps if you are familiar with Angular Framework, Typescript, CSS and HTML, but it is not necessary as this starter
+project already contains some predefined views and navigation items, which are suitable for interacting with your
+processes.
 
-- Node.js 22 or newer (current LTS recommended) and npm
-- A running Application Engine (see [`../README.md`](../README.md))
+# Requirements
 
-## Commands
+Frontend application has some requirements for runtime environment. The following table is summary of requirements to
+build, run and use the engine.
 
-Install dependencies once:
+| Name | Version | Description | Recommendation |
+|------|---------|-------------|----------------|
+| [Angular CLI](https://angular.io) | 13.+ | TypeScript-based web application framework | ```npm i -g @angular/cli@13.3.1"``` |
+| [NodeJs](https://nodejs.org/en/) | 12.20+ OR 14.15+ OR 16.10.+ | JavaScript runtime built on Chrome's V8 JavaScript engine | [NodeJs 14.19.3](https://nodejs.org/download/release/v14.19.3/) |
+| [NPM](https://www.npmjs.com) | 6.5.+ OR 7.4.+ | Node Package Manager | Compatible version comes with NodeJs |
 
-```bash
-npm install --legacy-peer-deps
-```
+# Installation
 
-| Command         | Purpose                                                            |
-|-----------------|--------------------------------------------------------------------|
-| `npm start`     | Development server at <http://localhost:4200>                      |
-| `npm run build` | Production build into `dist/template-frontend`                     |
-| `npm test`      | Unit tests with Karma (needs a browser)                            |
-| `npm run lint`  | Lint                                                               |
+This project can be used as a base to your NAE application. Before you start coding please consider doing following
+steps to personalize project:
 
-## Configuration: `nae.json`
+- In package.json, change the value of ```name``` attribute to name of your application
 
-[`nae.json`](nae.json) is the central configuration of the frontend. It defines:
+As it is an Angular project, there is a file called ```package.json``` in root folder, which contains information about
+project and application, script definitions, dependencies and their versions.
 
-- **Backend addresses** (`providers`): the auth endpoints and the resource URLs, all `http://localhost:8080/api` by
-  default. With `"autoResolveBackendUrl": true` the frontend uses `<current origin>/api` instead, which is useful when it
-  is served behind the same host as the engine.
-- **Views** (`views`): routes, the component behind each route, whether it is public or private, and its navigation
-  entry.
-- **Theme, languages** (`sk-SK`, `de-DE`, `en-US`) and **logging**.
+First step is to install the dependencies using the NPM package manager. Using terminal, navigate to the root folder (
+where the ```package.json``` is saved) and run ```npm install --legacy-peer-deps``` command. This will scan the ```package.json``` file and
+install the dependencies from NPM repositories.
 
-## Adding a view
+The second step is to build the application using Angular CLI (Command Line Interface). This can be done using terminal
+when you are in the root folder of the project running ```ng build``` command. This will create a ```dist``` folder,
+that contains the build of application. This build then can be moved to a web server (e.g. Apache or Nginx).
 
-A view is wired in three places:
+To run the application locally you can use ```ng serve``` command, that runs an embedded server and serves the
+application to localhost. Port of the application can be changed using ```--port``` option. The default port is 4200.
 
-1. an entry in `views` in [`nae.json`](nae.json),
-2. a registration in `src/app/template-frontend-view.service.ts`,
-3. a declaration in `src/app/app.module.ts`.
+## NAE.json
 
-The view service file states that it is managed by schematics (`create-view`). Prefer the schematic to editing it by
-hand. Existing views in `src/app/views/` are good starting points. For example, `side-nav/cases/` shows how a case view
-is configured through dependency injection tokens.
+The frontend application consist of side menu and a views for the application. There are some predefined views for
+processes, cases, tasks and user management. Further views can be added using Angular schematics.
 
-## Structure
+To configure NAE application more easily the libraries use file ```nae.json``` that is placed in root of the project.
+```nae.json``` defines global application configuration like urls to backend resources, services' configurations,
+routing and views.
 
-```
-src/
-├── app/
-│   ├── app.module.ts                      # imports of @netgrif/components modules, providers
-│   ├── template-frontend-configuration.service.ts  # loads nae.json
-│   ├── template-frontend-view.service.ts  # maps view ids to components
-│   └── views/                             # login, dashboard, side navigation, profile, builder examples
-├── assets/                                # images and static files
-├── environments/
-└── styles/themes/                         # Angular Material themes
-```
+<!--- For generating a view that is defined in ```nae.json``` you can use Angular Schematics. In terminal, use ```ng generate netgrif:components``` command to run NAE Components Schematic tool. --->
 
-The default language is set in `src/app/app.component.ts`.
+You can find [minimal nae.json configuration here](docs/configuration/nae-minimal.json).
 
-## Before publishing your app
-
-- Change `name` in `package.json` to the name of your application.
-- Review the backend addresses in `nae.json`.
+For easier startup
+clone [template project for NAE frontend application](https://github.com/netgrif/nae-frontend-starter)
