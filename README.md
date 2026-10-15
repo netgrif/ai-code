@@ -11,15 +11,15 @@ components and backend plugins are available for the cases where a process alone
 
 ## What's inside
 
-| Path                       | Purpose                                                                       |
-|----------------------------|-------------------------------------------------------------------------------|
-| `nae/docker-compose.yaml`  | Local stack: Application Engine (`:8080`), MongoDB, Elasticsearch, Redis      |
-| `nae/nae-frontend/`        | Angular 17 frontend built on `@netgrif/components`, configured by `nae.json`  |
-| `nae/nae-backend/plugins/` | Built plugins, loaded by the engine at start                                  |
-| `nae/nae-backend/logs/`    | Engine logs, mounted from the container                                       |
-| `processes/`               | Petriflow processes, one subfolder per application (includes `hello_world`)   |
-| `plugins/`                 | Source code of custom plugins, one Maven project per plugin                   |
-| `skills/`, `AGENTS.md`     | Optional instructions for AI coding agents (see below)                        |
+| Path                           | Purpose                                                                      |
+|--------------------------------|------------------------------------------------------------------------------|
+| `nae/docker-compose.yaml`      | Local stack: Application Engine (`:8080`), MongoDB, Elasticsearch, Redis     |
+| `nae/nae-frontend/`            | Angular 17 frontend built on `@netgrif/components`, configured by `nae.json` |
+| `nae/nae-backend/plugins/`     | Built plugins, loaded by the engine at start                                 |
+| `nae/nae-backend/logs/`        | Engine logs, mounted from the container                                      |
+| `processes/`                   | Petriflow processes, one subfolder per application (includes `hello_world`)  |
+| `plugins/`                     | Source code of custom plugins, one Maven project per plugin                  |
+| `.agents/skills/`, `AGENTS.md` | Optional instructions for AI coding agents (see below)                       |
 
 ## Requirements
 
@@ -73,7 +73,8 @@ Implement a requirement with the first of these that works:
    `nae/nae-frontend/nae.json` and use components from `@netgrif/components`.
 3. **Custom frontend component.** Only if the library has no component that your process needs. Views are registered in
    `nae.json`, `TemplateFrontendViewService`, and `AppModule`.
-4. **Plugin.** Only if the logic cannot be a process or action, for example a whole service such as OCR. Plugins are Java
+4. **Plugin.** Only if the logic cannot be a process or action, for example a whole service such as OCR. Plugins are
+   Java
    Spring Boot applications that use the Netgrif Plugin SDK. Put the source in `plugins/<plugin-name>/` and the built
    output in `nae/nae-backend/plugins/`, then restart the engine. See the
    [plugin guide](https://platform.netgrif.cloud/ecosystem/plugins/custom-plugin).
@@ -85,7 +86,8 @@ Built artifacts (jars, zips, `target/`, `node_modules/`, `dist/`) are ignored by
 The repository is prepared for AI coding agents that support `AGENTS.md`, skills, and MCP:
 
 - `AGENTS.md` explains the project, setup, and rules for development and testing.
-- `skills/` contains playbooks for generating processes and actions, testing a process, and writing frontend components
+- `.agents/skills/` contains playbooks for generating processes and actions, testing a process, and writing frontend
+  components
   and plugins.
 - `.mcp.json` registers two MCP servers: the public Petriflow server (`https://localhost:3000/mcp`) for validation
   and the Action API reference, and a local one (`http://localhost:8080/mcp`) for deploying and running processes on

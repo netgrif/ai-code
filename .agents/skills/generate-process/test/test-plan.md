@@ -21,7 +21,7 @@ Three parts:
 - For Stage 2 checks only: local NAE running (`curl localhost:8080/manage/health`
   returns `UP`) and the `local-nae` MCP connected.
 - Two working copies of the repo:
-    - **RED copy:** `skills/generate-process/` removed (other skills stay).
+    - **RED copy:** `.agents/skills/generate-process/` removed (other skills stay).
     - **GREEN copy:** current skill present.
 - Each run writes into its own application folder `processes/test_<scenario>_<run>/`
   (snake_case, so the naming checks apply), except S11/S12, which need the

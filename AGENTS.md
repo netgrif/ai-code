@@ -15,7 +15,7 @@ Reply in the language the user writes in.
 | `nae/nae-frontend/`        | Angular 17 frontend (`@netgrif/components`), configured by `nae.json`            |
 | `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`             |
 | `plugins/<artifactId>/`    | Java/Spring plugin sources, one Maven project per plugin                         |
-| `skills/`                  | Task playbooks for agents (see below)                                            |
+| `.agents/skills/`          | Task playbooks for agents (see below)                                            |
 | `.mcp.json`                | MCP servers: `petriflow` (remote) and `local-nae` (needs running NAE)            |
 
 ## How to implement a requirement
@@ -41,7 +41,7 @@ Load the matching skill before the task:
 - `write-component`: custom Angular component for the frontend.
 - `write-plugin`: custom NAE plugin.
 
-Do not run IDE "reformat code" on files in `skills/`: it breaks the code blocks
+Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
 inside the Markdown. Keep `name` equal to the folder name, and no `<` or `>` in
 the frontmatter.
 
