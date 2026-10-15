@@ -1,14 +1,14 @@
 services:
 
   petriflow-mcp:
-    image: netgrif/petriflow-mcp:latest
+    image: netgrif/petriflow-mcp:1.0.0
     environment:
       PETRIFLOW_MODE: LOCAL
     ports:
       - "3000:3000"
 
   nae-worker:
-    image: netgrif/application-engine-with-mcp:latest
+    image: netgrif/application-engine-with-mcp:7.0.3
     ports:
       - "8080:8080"
     environment:

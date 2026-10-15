@@ -31,7 +31,9 @@ the local instance and need user approval first.
 
 0. **Preflight:** run `java -version` and `mvn -v`. Developing a module needs
    **Java 21 and Maven**. If either is missing or Java is not 21, stop and tell
-   the developer to install it. Do not continue without them.
+   the developer to install it. Do not continue without them. Note that `mvn -v`
+   shows the JDK Maven actually runs on; it can differ from `java -version`.
+   The pom sets `release` 21, so a newer JDK still produces Java 21 bytecode.
 1. **Sources:** create or edit `modules/<artifactId>/`. The directory name equals
    the artifactId. Never put sources under `nae/`.
 2. **Project:** standard Maven layout, Java 21. Add the engine as a dependency
