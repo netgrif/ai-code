@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "petriflow": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
+    },
+    "local-nae": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}

@@ -1,0 +1,254 @@
+<document xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://petriflow.com/petriflow.schema.xsd">
+	<id>hello_world/hello_world</id>
+	<version>1.0.0</version>
+	<initials>HWP</initials>
+	<title name="model_title">Hello World</title>
+	<icon>emoji_people</icon>
+	<defaultRole>true</defaultRole>
+	<anonymousRole>true</anonymousRole>
+	<transitionRole>false</transitionRole>
+	<caseName name="model_default_case_name">Hello</caseName>
+	<data type="boolean">
+		<id>decision</id>
+		<title name="data_decision_title">Are you done?</title>
+		<desc name="data_decision_description">Please consider if you are done with this instance.</desc>
+		<init>false</init>
+		<event type="set">
+			<id>decision_set</id>
+			<actions phase="post">
+				<action id="action2">
+					<![CDATA[
+					repeat_arc: f.repeat_arc,
+					finish_arc: f.finish_arc,
+					decision: f.decision;
+
+					if(decision.value){
+					    change finish_arc value { 1 }
+					    change repeat_arc value { 0 }
+					} else {
+					    change finish_arc value { 0 }
+					    change repeat_arc value { 1 }
+					}
+
+					]]>
+				</action>
+			</actions>
+		</event>
+	</data>
+	<data type="number">
+		<id>finish_arc</id>
+		<title/>
+		<init>0</init>
+	</data>
+	<data type="text">
+		<id>greeting</id>
+		<title/>
+		<component>
+			<name>richtextarea</name>
+		</component>
+	</data>
+	<data type="text" immediate="true">
+		<id>name</id>
+		<title name="data_name_title">Your Name</title>
+		<desc name="data_name_description">Please write your name here.</desc>
+		<event type="set">
+			<id>name_set</id>
+			<actions phase="post">
+				<action id="action1">
+					<![CDATA[
+					name: f.name,
+					greeting: f.greeting;
+					change greeting value { "Hello **${name.value}**! How are you?" }
+
+					]]>
+				</action>
+			</actions>
+		</event>
+	</data>
+	<data type="number">
+		<id>repeat_arc</id>
+		<title/>
+		<init>1</init>
+	</data>
+	<i18n locale="sk">
+		<i18nString name="model_title">Ahoj svet</i18nString>
+		<i18nString name="model_default_case_name">Ahoj</i18nString>
+		<i18nString name="task_t1_title">Ahoj</i18nString>
+		<i18nString name="task_t2_title">Si hotový?</i18nString>
+		<i18nString name="data_name_title">Tvoje meno</i18nString>
+		<i18nString name="data_name_description">Prosím sem napíš svoje meno.</i18nString>
+		<i18nString name="data_decision_title">Skončil si?</i18nString>
+		<i18nString name="data_decision_description">Prosím zváž či si skončil pracovať s touto inštanciou.</i18nString>
+	</i18n>
+	<transition>
+		<id>t1</id>
+		<x>528</x>
+		<y>432</y>
+		<label name="task_t1_title">Hello</label>
+		<icon>play_circle_outline</icon>
+		<assignPolicy>auto</assignPolicy>
+		<dataGroup>
+			<id>t1_0</id>
+			<cols>4</cols>
+			<layout>grid</layout>
+			<dataRef>
+				<id>name</id>
+				<logic>
+					<behavior>editable</behavior>
+					<behavior>required</behavior>
+					<behavior>immediate</behavior>
+				</logic>
+				<layout>
+					<x>0</x>
+					<y>0</y>
+					<rows>1</rows>
+					<cols>4</cols>
+					<template>material</template>
+					<appearance>outline</appearance>
+				</layout>
+			</dataRef>
+			<dataRef>
+				<id>greeting</id>
+				<logic>
+					<behavior>visible</behavior>
+				</logic>
+				<layout>
+					<x>0</x>
+					<y>1</y>
+					<rows>2</rows>
+					<cols>4</cols>
+					<template>material</template>
+					<appearance>outline</appearance>
+				</layout>
+				<component>
+					<name>richtextarea</name>
+				</component>
+			</dataRef>
+		</dataGroup>
+		<event type="assign">
+			<id>t1_assign</id>
+		</event>
+		<event type="finish">
+			<id>t1_finish</id>
+		</event>
+		<event type="cancel">
+			<id>t1_cancel</id>
+		</event>
+		<event type="delegate">
+			<id>t1_delegate</id>
+		</event>
+	</transition>
+	<transition>
+		<id>t2</id>
+		<x>784</x>
+		<y>432</y>
+		<label name="task_t2_title">Finished?</label>
+		<icon>question_mark</icon>
+		<assignPolicy>auto</assignPolicy>
+		<dataGroup>
+			<id>t2_0</id>
+			<cols>4</cols>
+			<layout>grid</layout>
+			<dataRef>
+				<id>decision</id>
+				<logic>
+					<behavior>editable</behavior>
+					<behavior>required</behavior>
+				</logic>
+				<layout>
+					<x>0</x>
+					<y>0</y>
+					<rows>1</rows>
+					<cols>4</cols>
+					<template>material</template>
+					<appearance>outline</appearance>
+				</layout>
+			</dataRef>
+		</dataGroup>
+		<event type="assign">
+			<id>t2_assign</id>
+		</event>
+		<event type="finish">
+			<id>t2_finish</id>
+		</event>
+		<event type="cancel">
+			<id>t2_cancel</id>
+		</event>
+		<event type="delegate">
+			<id>t2_delegate</id>
+		</event>
+	</transition>
+	<place>
+		<id>p1</id>
+		<x>368</x>
+		<y>432</y>
+		<label>Init</label>
+		<tokens>1</tokens>
+		<static>false</static>
+	</place>
+	<place>
+		<id>p2</id>
+		<x>656</x>
+		<y>432</y>
+		<label>Greetings finished</label>
+		<tokens>0</tokens>
+		<static>false</static>
+	</place>
+	<place>
+		<id>p3</id>
+		<x>912</x>
+		<y>432</y>
+		<label>End</label>
+		<tokens>0</tokens>
+		<static>false</static>
+	</place>
+	<arc>
+		<id>a1</id>
+		<type>regular</type>
+		<sourceId>p1</sourceId>
+		<destinationId>t1</destinationId>
+		<multiplicity>1</multiplicity>
+	</arc>
+	<arc>
+		<id>a2</id>
+		<type>regular</type>
+		<sourceId>t1</sourceId>
+		<destinationId>p2</destinationId>
+		<multiplicity>1</multiplicity>
+	</arc>
+	<arc>
+		<id>a3</id>
+		<type>regular</type>
+		<sourceId>p2</sourceId>
+		<destinationId>t2</destinationId>
+		<multiplicity>1</multiplicity>
+	</arc>
+	<arc>
+		<id>a4</id>
+		<type>regular</type>
+		<sourceId>t2</sourceId>
+		<destinationId>p1</destinationId>
+		<multiplicity>1</multiplicity>
+		<reference>repeat_arc</reference>
+		<breakpoint>
+			<x>784</x>
+			<y>400</y>
+		</breakpoint>
+		<breakpoint>
+			<x>784</x>
+			<y>368</y>
+		</breakpoint>
+		<breakpoint>
+			<x>368</x>
+			<y>368</y>
+		</breakpoint>
+	</arc>
+	<arc>
+		<id>a5</id>
+		<type>regular</type>
+		<sourceId>t2</sourceId>
+		<destinationId>p3</destinationId>
+		<multiplicity>1</multiplicity>
+		<reference>finish_arc</reference>
+	</arc>
+</document>
