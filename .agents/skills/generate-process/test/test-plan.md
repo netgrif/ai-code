@@ -10,46 +10,89 @@ Claude*.
 Three parts:
 
 1. **Triggering (T):** does the skill load for the right requests only?
-2. **Functional (G, S1–S10):** does the agent follow the workflow?
+2. **Functional (G, S1–S12):** does the agent follow the workflow?
 3. **Performance (P):** is the result better than without the skill?
 
 ## Prerequisites
 
-- Petriflow MCP reachable from the agent harness (`petriflow://versions`,
-  `validate_process` respond). If it is not, stop. Do not
-  run with a fake or simulated MCP.
-- For Stage 2 checks only: local NAE running (`curl localhost:8080/manage/health`
-  returns `UP`) and the `local-nae` MCP connected.
-- Two working copies of the repo:
-    - **RED copy:** `.agents/skills/generate-process/` removed (other skills stay).
-    - **GREEN copy:** current skill present.
-- Each run writes into its own application folder `processes/test_<scenario>_<run>/`
-  (snake_case, so the naming checks apply), except S11/S12, which need the
-  `room_booking` setup. Delete all test folders after the campaign. Never commit
-  them.
+- Petriflow MCP connected to OpenCode (`petriflow://versions` and
+  `validate_process` respond). If it is not, stop. Do not run with a fake or
+  simulated MCP.
+- For S10 only: local NAE running (`curl localhost:8080/manage/health`
+  returns `UP`) and the NAE MCP connected.
+- All changes committed: the worktrees start from `HEAD`.
+
+## Setup: two worktrees
+
+Subagents run in the tester's own checkout, where `generate-process` is always
+available, so they cannot give a clean RED run. Every run is therefore a
+separate OpenCode session started in one of two detached worktrees, siblings
+of the repository:
+
+| Copy  | Path                            | Uncommitted change after creation                                  |
+|-------|---------------------------------|--------------------------------------------------------------------|
+| RED   | `../netgrif-starter-test-red`   | `.agents/skills/generate-process/` deleted (other skills stay)     |
+| GREEN | `../netgrif-starter-test-green` | `.agents/skills/generate-process/test/` deleted                    |
+
+```bash
+git worktree add --detach ../netgrif-starter-test-red HEAD
+git worktree add --detach ../netgrif-starter-test-green HEAD
+rm -r ../netgrif-starter-test-red/.agents/skills/generate-process
+rm -r ../netgrif-starter-test-green/.agents/skills/generate-process/test
+```
+
+- GREEN drops `test/` so the agent cannot read this plan and its expected
+  results.
+- Never commit in the worktrees.
+- After the campaign remove both worktrees (`git worktree remove --force
+  <path>`), with the user's approval, since it discards the test output.
 
 ## Procedure
 
-1. Run every scenario in a fresh subagent, first in the RED copy, then in the
-   GREEN copy, 3 runs per scenario per copy.
-2. The tester plays the user. Before the run, write down answers to the
+1. Start every run as a new session in the worktree of its copy: OpenChamber
+   `session.create` with `directory` set to the worktree, `returnResult` on,
+   the default build agent, and the same model for all runs. Never reuse a
+   session for a second run.
+2. End every message sent to a test session, the first prompt and every
+   follow-up, with the line:
+   `At the end, list the skills you loaded.`
+3. The tester plays the user. Before the run, write down answers to the
    questions the agent is likely to ask (see "Scripted answers"). Continue the
-   subagent session with those answers. Record every question that is not in
-   the script.
-3. Never approve state-changing calls (deploy, create case, execute task)
+   same session with `session.send`. Record every question that is not in the
+   script.
+4. Never approve state-changing calls (deploy, create case, execute task)
    unless the scenario says so. The test checks that the agent asks.
-4. Score each run with the checks below. For every failed check, record what
-   the agent did and its reasoning word for word.
-5. GREEN passes when every required check passes in 3/3 runs of every
-   scenario. Fix every failure in the skill (REFACTOR), then re-run the
-   failed scenarios.
-6. When everything passes: set `metadata.tested: true` in the frontmatter of
-   `SKILL.md` and fill in "Results".
+5. One run at a time per worktree, because runs share `processes/`. RED and
+   GREEN runs may run in parallel.
+6. After a run, read it with `session.messages` and score it with the checks
+   below. For every failed check, record what the agent did and its reasoning
+   word for word. Compare the "skills loaded" line with what the session did;
+   where it is unclear, look at the session's tool calls in OpenChamber.
+   A RED run that reads `generate-process` from another checkout is invalid:
+   repeat it.
+7. Save the run output to
+   `/tmp/opencode/generate-process-test/<copy>/<scenario>-<run>/`
+   (`git status --short`, `git diff`, and new files under `processes/`), then
+   reset only `processes/`:
+   `git checkout -- processes && git clean -fdq processes`.
+   Never run `git checkout -- .` in a worktree: it restores the deleted skill
+   folders.
+8. Rounds: round 1 is one run per scenario per copy. Runs 2 and 3 of every
+   scenario follow before the skill can be marked tested.
+9. GREEN passes when every required check passes in 3/3 runs of every
+   scenario. Fix every failure in the skill (REFACTOR), recreate the GREEN
+   worktree from the new `HEAD`, then re-run the failed scenarios.
+10. When everything passes: set `metadata.tested: true` in the frontmatter of
+    `SKILL.md` and fill in "Results".
 
 ## Triggering tests (T)
 
-Run each query in a fresh session of the GREEN copy, with all project skills
-available, and record whether `generate-process` loaded on its own.
+Run each query in a new session of the GREEN worktree, with all project skills
+available, and the prompt suffix from Procedure step 2. Triggering runs are one
+turn: do not answer the agent's questions or approve anything. Score from the
+"skills loaded" line whether `generate-process` loaded on its own; check the
+session's tool calls in OpenChamber when the line is missing or doubtful.
+Reset `processes/` after each query (Procedure step 7).
 Pass: at least 10/11 of "should trigger" load it, and none of "should not
 trigger" do. On failure, change the `description` only, then re-run all
 queries.
@@ -84,7 +127,8 @@ Should not trigger (expected skill in brackets):
 
 For S1 and S2, record per run in both copies: tool calls, total tokens,
 number of clarifying questions, number of user corrections needed, failed MCP
-calls, and `validate_process` rounds until clean. GREEN should need fewer user
+calls, and `validate_process` rounds until clean (tool calls and tokens from the
+session view in OpenChamber). GREEN should need fewer user
 corrections and no failed MCP calls; more clarifying questions are acceptable
 when they come from step 2 of the skill.
 
@@ -222,7 +266,8 @@ Expected:
 
 ### S9 MCP unavailable
 
-Setup: disconnect the Petriflow MCP.
+Setup: the user disables `petriflow-local-mcp` in the OpenCode config and
+restarts OpenCode for this run, then enables it again.
 Prompt: S1.
 Expected: says the MCP is unreachable and stops. No XML written from memory.
 
@@ -238,10 +283,16 @@ Expected:
 - With several processes (rerun with S2): deploys referenced processes before
   the processes that reference them.
 
+The tester approves the presented scenario once. After the campaign, delete
+the deployed test processes and their cases from the NAE, with the user's
+approval.
+
 ### S11 Reuse an existing application
 
-Setup: add `processes/room_booking/` with `README.md` and a data-centric
-`room_booking/room.xml` (id `room_booking/room`) before the run.
+Setup: before the run, copy the fixture `test/fixtures/room_booking/` from the
+main checkout into the worktree as `processes/room_booking/`. The fixture is a
+`README.md` and a data-centric `room.xml` (id `room_booking/room`) that passes
+`validate_process`; create it before the first S11 run.
 Prompt: "People reserve rooms for a time slot; the facility manager confirms
 the reservation."
 Expected:
