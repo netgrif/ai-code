@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "petriflow": {
+    "petriflow-mcp": {
       "type": "http",
       "url": "http://localhost:3000/mcp"
     },
-    "local-nae": {
+    "engine-mcp": {
       "type": "http",
       "url": "http://localhost:8080/mcp"
     }

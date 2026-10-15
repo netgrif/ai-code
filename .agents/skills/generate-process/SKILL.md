@@ -1,10 +1,10 @@
 ---
 name: generate-process
 description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to create a new application in processes/, or to split an application into several processes. Not for writing a single action's Groovy code (use generate-action) or for only validating or deploying a process (use test-process).
-compatibility: Requires the Petriflow MCP server (https://localhost:3000/mcp). Live tests also need a running local NAE with the local-nae MCP (http://localhost:8080/mcp).
+compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
 metadata:
   tested: false
-  mcp-server: petriflow
+  mcp-server: petriflow-mcp
   version: 0.3.0
 ---
 
@@ -30,7 +30,7 @@ validated.
 
 ## Steps
 
-1. **Precondition.** The `petriflow` MCP must answer. If it does not, see
+1. **Precondition.** The `petriflow-mcp` MCP must answer. If it does not, see
    Troubleshooting; never write XML from memory.
 2. **Version and language.**
     - Read `petriflow://versions` (or tool `list_versions`) and take the latest
@@ -97,7 +97,7 @@ entity, read `references/modeling-principles.md`. It contains:
 | An entity that lives longer than one run (room, customer, contract)      | Data-centric process on the CRUD template (P6)                             |
 | Groups of transitions that share no data field                           | Separate processes joined by channels (P1, P2)                             |
 | The same form needed in several processes                                | Define it once, embed it with taskRef (P5)                                 |
-| A whole service (OCR, external system)                                   | Plugin (`write-plugin`), not a process                                     |
+| A whole service (OCR, external system)                                   | Module (`write-module`), not a process                                     |
 
 Every cut costs a channel. Cut only when a row above applies.
 

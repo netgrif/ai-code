@@ -10,13 +10,13 @@ Reply in the language the user writes in.
 | Path                       | Purpose                                                                          |
 |----------------------------|----------------------------------------------------------------------------------|
 | `nae/docker-compose.yaml`  | Local stack: NAE (:8080), MongoDB, Elasticsearch, Redis                          |
-| `nae/nae-backend/plugins/` | Built plugins, unzipped here, loaded by NAE at start. Output only, never sources |
+| `nae/nae-backend/modules/` | Built modules, unzipped here, loaded by NAE at start. Output only, never sources |
 | `nae/nae-backend/logs/`    | NAE logs (mounted from the container), including `nae.log`                       |
 | `nae/nae-frontend/`        | Angular 17 frontend (`@netgrif/components`), configured by `nae.json`            |
 | `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`             |
-| `plugins/<artifactId>/`    | Java/Spring plugin sources, one Maven project per plugin                         |
+| `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                         |
 | `.agents/skills/`          | Task playbooks for agents (see below)                                            |
-| `.mcp.json`                | MCP servers: `petriflow` (remote) and `local-nae` (needs running NAE)            |
+| `.mcp.json`                | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE) |
 
 ## How to implement a requirement
 
@@ -26,8 +26,8 @@ Choose the first option that works. Move down only when the one above cannot do 
 2. **Existing component** from `@netgrif/components`, configured via `nae.json` views.
 3. **Custom frontend component**, only if the library has no component that the
    process logic needs. Use the `write-component` skill.
-4. **Plugin**, only if the logic cannot be a process or action (a whole service,
-   e.g. OCR). Use the `write-plugin` skill.
+4. **Module**, only if the logic cannot be a process or action (a whole service,
+   e.g. OCR). Use the `write-module` skill.
 
 Explain to the user why you moved down a level before doing it.
 
@@ -39,7 +39,7 @@ Load the matching skill before the task:
 - `generate-action`: write Groovy action code inside a process.
 - `test-process`: validate a process and run it on the local NAE.
 - `write-component`: custom Angular component for the frontend.
-- `write-plugin`: custom NAE plugin.
+- `write-module`: custom NAE module (Java/Spring).
 
 Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
 inside the Markdown. Keep `name` equal to the folder name, and no `<` or `>` in
@@ -47,16 +47,18 @@ the frontmatter.
 
 ## MCP servers
 
-- `petriflow` is run locally `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow versions
+- `petriflow-mcp` is run locally `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow
+  versions
   and Action API.
   Never write Petriflow or Action API syntax from memory.
-- `local-nae` works only while NAE runs on `localhost:8080`.
+- `engine-mcp` works only while NAE runs on `localhost:8080`.
   If it is not reachable, say so and stop. Do not fake results.
 
 ## Project setup
 
-Prerequisites: Docker with Compose, Node.js 22+ (prefer the current LTS), and (only when writing plugins) Java 21 and
-Maven.
+Prerequisites: Docker with Compose, Node.js 22+ (prefer the current LTS), and (only when developing modules) Java 21 and
+Maven. **Warn the developer** that developing a module requires Java 21 and Maven installed; if they are missing, say so
+and stop before module work.
 
 1. Start the backend: `cd nae && docker compose up -d`.
 2. Wait until NAE is healthy: `curl http://localhost:8080/manage/health` returns
@@ -67,8 +69,8 @@ Maven.
    `http://localhost:8080/api` (see `nae.json`).
 5. Log in as `super@netgrif.com` (super admin). Its password is generated on the
    first run and printed in `nae/nae-backend/logs/nae.log`.
-6. Deploy the processes from `processes/`: with the `local-nae` MCP (`deploy_process`), or in the UI via the "more" icon
-   (bottom left) →
+6. Deploy the processes from `processes/`: with the `engine-mcp` MCP (`deploy_process`), or in the UI via the "more"
+   icon (bottom left) →
    view **Workflow** → **+** → select the XML file → **Upload**.
    Then create a case to try the process.
 
@@ -80,7 +82,7 @@ file names than the config). Fix paths or ask the user.
 
 **Approval.** Anything that changes the local NAE or the machine needs user
 approval first: deploying a process, creating a case, executing a task,
-copying/removing a plugin, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
+copying/removing a module, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
 Docker volumes or data.
 
 **Credentials.** The generated super admin password is a secret. Read it from the
@@ -99,7 +101,7 @@ output.
 - Every process change must pass `validate_process`. Do not hand-wave around errors.
 - Actions are short, use Action API methods, one concern each. Never use Grape,
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
-  function. Whole services become plugins.
+  function. Whole services become modules.
 
 **Frontend.**
 
@@ -113,10 +115,12 @@ output.
 - `nae/nae-frontend/README.md` is outdated (Angular 13). `package.json` is the
   source of truth.
 
-**Plugins.**
+**Modules.**
 
-- Sources in `plugins/<artifactId>/`, built with `nae-module-maven-plugin`,
-  ZIP unzipped into `nae/nae-backend/plugins/<artifactId>/`, then restart `nae`.
+- Sources in `modules/<artifactId>/`, built with `nae-module-maven-plugin`,
+  ZIP unzipped into `nae/nae-backend/modules/<artifactId>/`, then restart `nae`.
+- Actions call a module as `Module.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
+  XML, not the module. Otherwise use standard Java and Spring practice.
 
 **Git.**
 
@@ -132,7 +136,7 @@ A change is done only when the relevant checks pass and you have seen the output
 |------------------|-------------------------------------------------------------------------------------------------------------------|
 | Process / action | `validate_process`, then a live scenario with the `test-process` skill                                            |
 | Frontend         | `npm run lint`, `npm run build`, `npm test` (Karma, needs a browser) in `nae/nae-frontend`                        |
-| Plugin           | `mvn -f plugins/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |
+| Module           | `mvn -f modules/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |
 
 Report what was run and the results. If a check cannot run (NAE or MCP down),
 say that instead of claiming success.

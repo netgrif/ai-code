@@ -1,14 +1,14 @@
 services:
 
-  petriflow:
+  petriflow-mcp:
     image: netgrif/petriflow-mcp:latest
     environment:
       PETRIFLOW_MODE: LOCAL
     ports:
       - "3000:3000"
 
-  nae:
-    image: netgrif/application-enine-with-mcp:latest
+  nae-worker:
+    image: netgrif/application-engine-with-mcp:latest
     ports:
       - "8080:8080"
     environment:
@@ -39,7 +39,8 @@ services:
       retries: 10
     volumes:
       - ./nae-backend/logs:/opt/netgrif/engine/log:Z
-      - ./nae-backend/plugins:/opt/netgrif/engine/modules/custom:Z
+      - ./nae-backend/storage:/opt/netgrif/engine/storage:Z
+      - ./nae-backend/modules:/opt/netgrif/engine/modules/custom:Z
     depends_on:
       nae-mongodb:
         condition: service_started

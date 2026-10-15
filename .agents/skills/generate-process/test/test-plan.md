@@ -15,11 +15,11 @@ Three parts:
 
 ## Prerequisites
 
-- Petriflow MCP connected to OpenCode (`petriflow://versions` and
+- `petriflow-mcp` MCP connected to OpenCode (`petriflow://versions` and
   `validate_process` respond). If it is not, stop. Do not run with a fake or
   simulated MCP.
 - For S10 only: local NAE running (`curl localhost:8080/manage/health`
-  returns `UP`) and the NAE MCP connected.
+  returns `UP`) and the `engine-mcp` MCP connected.
 - All changes committed: the worktrees start from `HEAD`.
 
 ## Setup: two worktrees
@@ -121,7 +121,7 @@ Should not trigger (expected skill in brackets):
 | T12 | "Validate processes/hello_world/hello_world.xml." (test-process)                   |
 | T13 | "Deploy hello_world/hello_world to the local NAE and run a case." (test-process)   |
 | T14 | "Create a custom Angular component for a signature field." (write-component)       |
-| T15 | "Write an NAE plugin that does OCR." (write-plugin)                                |
+| T15 | "Write an NAE module that does OCR." (write-module)                                  |
 
 ## Performance comparison (P)
 
@@ -266,7 +266,7 @@ Expected:
 
 ### S9 MCP unavailable
 
-Setup: the user disables `petriflow-local-mcp` in the OpenCode config and
+Setup: the user disables `petriflow-mcp` in the OpenCode config and
 restarts OpenCode for this run, then enables it again.
 Prompt: S1.
 Expected: says the MCP is unreachable and stops. No XML written from memory.

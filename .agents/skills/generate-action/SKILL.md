@@ -1,10 +1,10 @@
 ---
 name: generate-action
 description: Writes and validates Petriflow actions, the Groovy code that runs on process events, using the Petriflow Action API. Use when writing or changing an action inside a specific process XML, e.g. "compute the total when the price changes", "create a case when this task finishes", "hide a field after approval", or any reaction to data set/get or task assign/finish/cancel/delegate events. Not for designing a new process or its net (use generate-process).
-compatibility: Requires the Petriflow MCP server (https://localhost:3000/mcp).
+compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp).
 metadata:
   tested: false
-  mcp-server: petriflow
+  mcp-server: petriflow-mcp
   version: 0.3.0
 ---
 
@@ -51,9 +51,9 @@ Always generate an action in the context of its target process XML.
     - Code that is long or reused across actions goes into a function defined
       per the Petriflow schema (fetch the schema from the Petriflow MCP; don't
       invent the syntax).
-    - Logic that is a whole service (e.g. OCR of a document) is a plugin: use the
-      `write-plugin` skill, then call it from the action as
-      `Plugin.<artifactId>.<entryPoint>.<method>(args)`.
+    - Logic that is a whole service (e.g. OCR of a document) is a module: use the
+      `write-module` skill, then call it from the action as
+      `Module.<group>.<serviceBeanName>.<method>(args)`.
 6. **Insert:** put the code in CDATA with a unique `id` (`actionN`, as in the
    process). If the user asked only for code, return the XML snippet and its
    location instead of editing the file.
@@ -102,7 +102,7 @@ Solution: tell the user and stop. Do not write Action API calls from memory.
 **The needed method is not in `list_actions`.**
 Cause: it does not exist in this Petriflow version.
 Solution: do not invent it. Combine listed methods, move the logic into a
-function, or, for a whole service, use the `write-plugin` skill.
+function, or, for a whole service, use the `write-module` skill.
 
 ## Output
 
@@ -118,7 +118,7 @@ what it does, the API methods used, and the validation results.
 - Duplicate action ids.
 - One long action instead of several short ones or a function.
 - Raw Groovy that reimplements an Action API method.
-- Service-sized logic inside an action instead of a plugin.
+- Service-sized logic inside an action instead of a module.
 - Wrong phase (`pre` vs `post`).
 - Always returning a new value from `change ... value`: return `unchanged`
   when nothing changes, otherwise set-event actions on that field fire again.

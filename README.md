@@ -7,7 +7,7 @@ workflow application quickly.
 
 In a Netgrif application the business logic lives in **Petriflow processes** (Petri net based workflows described in
 XML, with Groovy actions). The engine runs them, and the frontend lets users work with cases and tasks. Custom frontend
-components and backend plugins are available for the cases where a process alone is not enough.
+components and backend modules are available for the cases where a process alone is not enough.
 
 ## What's inside
 
@@ -15,17 +15,17 @@ components and backend plugins are available for the cases where a process alone
 |--------------------------------|------------------------------------------------------------------------------|
 | `nae/docker-compose.yaml`      | Local stack: Application Engine (`:8080`), MongoDB, Elasticsearch, Redis     |
 | `nae/nae-frontend/`            | Angular 17 frontend built on `@netgrif/components`, configured by `nae.json` |
-| `nae/nae-backend/plugins/`     | Built plugins, loaded by the engine at start                                 |
+| `nae/nae-backend/modules/`     | Built modules, loaded by the engine at start                                 |
 | `nae/nae-backend/logs/`        | Engine logs, mounted from the container                                      |
 | `processes/`                   | Petriflow processes, one subfolder per application (includes `hello_world`)  |
-| `plugins/`                     | Source code of custom plugins, one Maven project per plugin                  |
+| `modules/`                     | Source code of custom modules, one Maven project per module                  |
 | `.agents/skills/`, `AGENTS.md` | Optional instructions for AI coding agents (see below)                       |
 
 ## Requirements
 
 - Docker with Docker Compose
 - Node.js 22 or newer (current LTS recommended) and npm
-- Java 21 and Maven, only if you write plugins
+- Java 21 and Maven, **required only if you develop custom modules** (not needed to write processes)
 
 ## Getting started
 
@@ -73,11 +73,11 @@ Implement a requirement with the first of these that works:
    `nae/nae-frontend/nae.json` and use components from `@netgrif/components`.
 3. **Custom frontend component.** Only if the library has no component that your process needs. Views are registered in
    `nae.json`, `TemplateFrontendViewService`, and `AppModule`.
-4. **Plugin.** Only if the logic cannot be a process or action, for example a whole service such as OCR. Plugins are
-   Java
-   Spring Boot applications that use the Netgrif Plugin SDK. Put the source in `plugins/<plugin-name>/` and the built
-   output in `nae/nae-backend/plugins/`, then restart the engine. See the
-   [plugin guide](https://platform.netgrif.cloud/ecosystem/plugins/custom-plugin).
+4. **Module.** Only if the logic cannot be a process or action, for example a whole service such as OCR. Modules are
+   Java Spring Boot projects loaded into the engine at start; their services are called from actions as
+   `Module.<group>.<bean>.<method>()`. Developing one requires Java 21 and Maven. Put the source in
+   `modules/<module-name>/` and the built output in `nae/nae-backend/modules/`, then restart the engine. See the
+   [module guide](https://platform.netgrif.cloud/ecosystem/modules/custom-module).
 
 Built artifacts (jars, zips, `target/`, `node_modules/`, `dist/`) are ignored by git and should not be committed.
 
@@ -88,9 +88,9 @@ The repository is prepared for AI coding agents that support `AGENTS.md`, skills
 - `AGENTS.md` explains the project, setup, and rules for development and testing.
 - `.agents/skills/` contains playbooks for generating processes and actions, testing a process, and writing frontend
   components
-  and plugins.
-- `.mcp.json` registers two MCP servers: the public Petriflow server (`https://localhost:3000/mcp`) for validation
-  and the Action API reference, and a local one (`http://localhost:8080/mcp`) for deploying and running processes on
+  and modules.
+- `.mcp.json` registers two MCP servers: `petriflow-mcp` (`http://localhost:3000/mcp`, run locally by Docker Compose) for validation
+  and the Action API reference, and `engine-mcp` (`http://localhost:8080/mcp`, needs the running engine) for deploying and running processes on
   your engine.
 
 Using an agent is optional. Everything above works without one.

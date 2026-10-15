@@ -1,10 +1,10 @@
 ---
 name: test-process
 description: Validates Petriflow process XML with the Petriflow MCP and runs it as a live case scenario on the local NAE. Use when a process in processes/*.xml was created or modified and must be checked, or when the user asks to "validate", "test", "deploy" or "try out" a process or to run its tasks on the local engine. Not for designing or writing a process (use generate-process) or its actions (use generate-action).
-compatibility: Requires the Petriflow MCP server (https://localhost:3000/mcp). Stage 2 also needs a running local NAE with the local-nae MCP (http://localhost:8080/mcp).
+compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Stage 2 also needs a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
 metadata:
   tested: false
-  mcp-server: petriflow, local-nae
+  mcp-server: petriflow-mcp, engine-mcp
   version: 0.3.0
 ---
 
@@ -21,7 +21,7 @@ case, execute task) needs user approval before it runs. Read-only calls
 (`list_versions`, `validate_process`, `list_tasks_of_case`) don't. For file
 edits see Stage 1, step 5.
 
-## Stage 1: Validate (petriflow MCP)
+## Stage 1: Validate (petriflow-mcp MCP)
 
 1. If the Petriflow MCP does not answer, say so and stop. Never replace
    validation with reading the XML by eye.
@@ -43,7 +43,7 @@ edits see Stage 1, step 5.
     - An existing or user-written file: apply fixes only after the user
       approved the proposed diff.
 
-## Stage 2: Live test (local-nae MCP, http://localhost:8080/mcp)
+## Stage 2: Live test (engine-mcp MCP, http://localhost:8080/mcp)
 
 Precondition: Stage 1 has no errors. If the NAE MCP tools are unavailable, say
 so and stop. Do not fake results. Suggest running `docker compose up` in `nae/`.

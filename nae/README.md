@@ -1,13 +1,13 @@
 # nae
 
-Everything needed to run the application locally: the backend stack, the frontend, and the folder where built plugins
+Everything needed to run the application locally: the backend stack, the frontend, and the folder where built modules
 are loaded from. For the overall project, see the [main README](../README.md).
 
 | Path                              | Purpose                                                      |
 |-----------------------------------|--------------------------------------------------------------|
 | [`docker-compose.yaml`](docker-compose.yaml) | Backend stack: Application Engine, MongoDB, Elasticsearch, Redis |
 | [`nae-frontend/`](nae-frontend/)  | Angular frontend                                             |
-| [`nae-backend/plugins/`](nae-backend/plugins/) | Built plugins loaded by the engine at start     |
+| [`nae-backend/modules/`](nae-backend/modules/) | Built modules loaded by the engine at start     |
 | `nae-backend/logs/`               | Engine logs, mounted from the container                      |
 
 ## Backend stack
@@ -17,7 +17,7 @@ Run from this folder:
 ```bash
 docker compose up -d      # start
 docker compose logs nae   # engine logs
-docker compose restart nae  # reload, e.g. after changing plugins
+docker compose restart nae  # reload, e.g. after changing modules
 docker compose down       # stop and remove containers
 ```
 
@@ -38,5 +38,6 @@ The database services have no volumes configured, so their data is removed toget
 ## Extending your instance
 
 - **Frontend components and views:** see [`nae-frontend/README.md`](nae-frontend/README.md).
-- **Plugins:** source code lives in [`../plugins/`](../plugins/README.md). Built output is unzipped into
-  [`nae-backend/plugins/`](nae-backend/plugins/README.md), which is mounted into the engine container.
+- **Modules:** source code lives in [`../modules/`](../modules/README.md) (building needs Java 21 and Maven). Built
+  output is unzipped into [`nae-backend/modules/`](nae-backend/modules/README.md), which is mounted into the engine
+  container.
