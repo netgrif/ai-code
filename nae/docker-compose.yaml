@@ -43,11 +43,11 @@ services:
       - ./nae-backend/modules:/opt/netgrif/engine/modules/custom:Z
     depends_on:
       nae-mongodb:
-        condition: service_started
+        condition: service_healthy
       nae-elasticsearch:
-        condition: service_started
+        condition: service_healthy
       nae-redis:
-        condition: service_started
+        condition: service_healthy
     networks:
       - netgrif-platformnet
 
