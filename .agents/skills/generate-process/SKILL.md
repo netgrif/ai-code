@@ -1,6 +1,6 @@
 ---
 name: generate-process
-description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to create a new application in processes/, or to split an application into several processes. Not for writing a single action's Groovy code (use generate-action) or for only validating or deploying a process (use test-process).
+description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to create a new application in processes/, or to split an application into several processes. Not for writing a single action's Groovy code (use generate-action), for the application menu (use generate-menu-import) or for only validating or deploying a process (use test-process).
 compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
 metadata:
   tested: false
