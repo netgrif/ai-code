@@ -37,6 +37,7 @@ Load the matching skill before the task:
 
 - `generate-process`: create or change a Petriflow process.
 - `generate-action`: write Groovy action code inside a process.
+- `generate-menu-import`: menu import process (menu items, folders, views).
 - `test-process`: validate a process and run it on the local NAE.
 - `write-component`: custom Angular component for the frontend.
 - `write-module`: custom NAE module (Java/Spring).

@@ -58,8 +58,8 @@
 					<![CDATA[
 					name: f.name,
 					greeting: f.greeting;
-					change greeting value { "Hello **${name.value}**! How are you?" }
 
+					change greeting value { "Hello **${name.value}**! How are you?".toString() }
 					]]>
 				</action>
 			</actions>
