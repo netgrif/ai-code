@@ -174,8 +174,8 @@ Constructors:
 | `useTabIcon` | `true` | `setUseTabIcon` | Show the icon on the tab. |
 | `order` | null | `setOrder(Double)` | Sort order among siblings; must be finite. Pass `10d`. |
 | `allowedRoles`, `bannedRoles` | empty | `setAllowedRoles`, `setBannedRoles` | From `collectRolesForPreferenceItem`. |
-| `useCustomView` | `false` | `setUseCustomView` | Open a frontend custom view instead of `view`. |
-| `customViewSelector` | | `setCustomViewSelector` | Selector of that frontend view. |
+| `useCustomView` | `false` | `setUseCustomView` | Open a view that is built into the frontend container instead of `view`. |
+| `customViewSelector` | | `setCustomViewSelector` | Selector of that built-in frontend view. |
 | `isAutoSelect` | `false` | `setAutoSelect` | Open this item after login. |
 | `view` | null | `setView(ViewBody)` | Also sets `useTabbedView` from the view type. |
 

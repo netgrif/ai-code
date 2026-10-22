@@ -1,35 +1,39 @@
 # AGENTS.md
 
 This repository is a **template for applications on the Netgrif Platform (NAE)**.
-It is not a Java or Angular project with business logic in code. The application
-logic lives in **Petriflow processes** that run on the Netgrif Application Engine.
+It is not a code project: the application logic lives in **Petriflow processes**
+that run on the Netgrif Application Engine, and the user interface is the
+standard Netgrif frontend, which runs as a container. This repository has no
+frontend sources.
 Reply in the language the user writes in.
 
 ## Repository layout
 
-| Path                       | Purpose                                                                          |
-|----------------------------|----------------------------------------------------------------------------------|
-| `nae/docker-compose.yaml`  | Local stack: NAE (:8080), MongoDB, Elasticsearch, Redis                          |
-| `nae/nae-backend/modules/` | Built modules, unzipped here, loaded by NAE at start. Output only, never sources |
-| `nae/nae-backend/logs/`    | NAE logs (mounted from the container), including `nae.log`                       |
-| `nae/nae-frontend/`        | Angular 17 frontend (`@netgrif/components`), configured by `nae.json`            |
-| `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`             |
-| `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                         |
-| `.agents/skills/`          | Task playbooks for agents (see below)                                            |
-| `.mcp.json`                | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE) |
+| Path                       | Purpose                                                                                                           |
+|----------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `nae/docker-compose.yaml`  | Local stack: `nae-worker` (:8080), `nae-frontend` (:4200), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis |
+| `nae/nae-backend/modules/` | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                  |
+| `nae/nae-backend/logs/`    | NAE logs (mounted from the container), including `nae.log`                                                        |
+| `nae/nae-backend/storage/` | NAE storage (mounted from the container)                                                                          |
+| `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`                                              |
+| `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                                                          |
+| `.agents/skills/`          | Task playbooks for agents (see below)                                                                             |
+| `.mcp.json`                | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE)                                  |
 
 ## How to implement a requirement
 
 Choose the first option that works. Move down only when the one above cannot do it:
 
-1. **Petriflow process** (data, transitions, roles, actions). Default for all app logic.
-2. **Existing component** from `@netgrif/components`, configured via `nae.json` views.
-3. **Custom frontend component**, only if the library has no component that the
-   process logic needs. Use the `write-component` skill.
-4. **Module**, only if the logic cannot be a process or action (a whole service,
+1. **Petriflow process** (data, transitions, roles, actions, forms). Default for all
+   app logic. The application menu is also a process (`generate-menu-import`).
+2. **Module**, only if the logic cannot be a process or action (a whole service,
    e.g. OCR). Use the `write-module` skill.
 
 Explain to the user why you moved down a level before doing it.
+
+Do not create or change frontend code. If a requirement needs a user interface
+that forms in processes and the menu cannot provide, tell the user instead of
+working around it.
 
 ## Skills
 
@@ -39,7 +43,6 @@ Load the matching skill before the task:
 - `generate-action`: write Groovy action code inside a process.
 - `generate-menu-import`: menu import process (menu items, folders, views).
 - `test-process`: validate a process and run it on the local NAE.
-- `write-component`: custom Angular component for the frontend.
 - `write-module`: custom NAE module (Java/Spring).
 
 Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
@@ -48,36 +51,33 @@ the frontmatter.
 
 ## MCP servers
 
-- `petriflow-mcp` is run locally `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow
-  versions
-  and Action API.
+- `petriflow-mcp` is the `petriflow-mcp` container of the compose stack, on
+  `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow
+  versions and Action API.
   Never write Petriflow or Action API syntax from memory.
-- `engine-mcp` works only while NAE runs on `localhost:8080`.
+- `engine-mcp` works only while `nae-worker` runs on `localhost:8080`.
   If it is not reachable, say so and stop. Do not fake results.
 
 ## Project setup
 
-Prerequisites: Docker with Compose, Node.js 22+ (prefer the current LTS), and (only when developing modules) Java 21 and
+Prerequisites: Docker with Compose, and (only when developing modules) Java 21 and
 Maven. **Warn the developer** that developing a module requires Java 21 and Maven installed; if they are missing, say so
 and stop before module work.
 
-1. Start the backend: `cd nae && docker compose up -d`.
+1. Start the stack: `cd nae && docker compose up -d`. It starts the engine, the
+   frontend, the Petriflow MCP and the databases. The frontend waits for a
+   healthy engine.
 2. Wait until NAE is healthy: `curl http://localhost:8080/manage/health` returns
-   status `UP` (no authentication needed). If it does not, read
-   `nae/nae-backend/logs/nae.log`.
-3. Install the frontend: `cd nae/nae-frontend && npm install --legacy-peer-deps`.
-4. Run the frontend: `npm start` (http://localhost:4200). It talks to
-   `http://localhost:8080/api` (see `nae.json`).
-5. Log in as `super@netgrif.com` (super admin). Its password is generated on the
-   first run and printed in `nae/nae-backend/logs/nae.log`.
-6. Deploy the processes from `processes/`: with the `engine-mcp` MCP (`deploy_process`), or in the UI via the "more"
+   status `UP` (no authentication needed), or `docker compose ps` shows the
+   services as healthy. If not, read `nae/nae-backend/logs/nae.log`.
+3. Open the frontend at http://localhost:4200 and log in as `super@netgrif.com`
+   (super admin). Its password is generated on the first run and printed in
+   `nae/nae-backend/logs/nae.log`. The frontend is a single-page app: the
+   browser calls the engine on `localhost:8080` directly.
+4. Deploy the processes from `processes/`: with the `engine-mcp` MCP (`deploy_process`), or in the UI via the "more"
    icon (bottom left) →
    view **Workflow** → **+** → select the XML file → **Upload**.
    Then create a case to try the process.
-
-Before the first run, confirm that the `from` paths in `nae.json` point to
-existing files (e.g. `views/dashboard/` and `views/side-nav/` use different
-file names than the config). Fix paths or ask the user.
 
 ## Rules
 
@@ -104,30 +104,20 @@ output.
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
   function. Whole services become modules.
 
-**Frontend.**
-
-- Add a view in three places: `views` in `nae.json`, `TemplateFrontendViewService`,
-  and `declarations` in `AppModule`. Prefer the schematics (`create-view`) over
-  hand edits of `TemplateFrontendViewService`.
-- Component behavior is configured through the DI tokens (`NAE_BASE_FILTER`,
-  `NAE_VIEW_ID_SEGMENT`, …); follow `views/side-nav/cases/` as the pattern.
-- Backend URLs, theme and languages (`sk-SK`, `de-DE`, `en-US`) live in `nae.json`.
-  Do not hardcode them in components.
-- `nae/nae-frontend/README.md` is outdated (Angular 13). `package.json` is the
-  source of truth.
-
 **Modules.**
 
 - Sources in `modules/<artifactId>/`, built with `nae-module-maven-plugin`,
-  ZIP unzipped into `nae/nae-backend/modules/<artifactId>/`, then restart `nae`.
+  ZIP unzipped into `nae/nae-backend/modules/<artifactId>/`, then restart
+  `nae-worker` (`docker compose restart nae-worker` in `nae/`).
 - Actions call a module as `Module.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
   XML, not the module. Otherwise use standard Java and Spring practice.
 
 **Git.**
 
-- Never commit jars, zips, `target/`, `node_modules/`, `dist/`, logs, `.env`, or
+- Never commit jars, zips, `target/`, logs, `.env`, or
   secrets. `.gitignore` already covers them; never use `git add -f`.
-- Do not change the NAE image version in `docker-compose.yaml` without asking.
+- Do not change image versions in `docker-compose.yaml` without asking. The
+  engine and frontend images are released together, so they stay on one version.
 
 ## Testing and definition of done
 
@@ -136,7 +126,6 @@ A change is done only when the relevant checks pass and you have seen the output
 | Change           | Check                                                                                                             |
 |------------------|-------------------------------------------------------------------------------------------------------------------|
 | Process / action | `validate_process`, then a live scenario with the `test-process` skill                                            |
-| Frontend         | `npm run lint`, `npm run build`, `npm test` (Karma, needs a browser) in `nae/nae-frontend`                        |
 | Module           | `mvn -f modules/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |
 
 Report what was run and the results. If a check cannot run (NAE or MCP down),

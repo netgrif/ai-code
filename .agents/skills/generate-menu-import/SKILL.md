@@ -29,11 +29,10 @@ Template and API reference: `references/menu-api.md`.
 
 ## Critical rules
 
-- Never write API calls from memory. Menu methods exposed by the Petriflow MCP
-  (`createOrUpdateMenuItem`, `getOrCreateMenuItem`, `findMenuItem`,
+- Never write API calls from memory. Menu methods exposed by the Petriflow MCP (`createOrUpdateMenuItem`,
+  `getOrCreateMenuItem`, `findMenuItem`,
   `changeMenuItem`, `moveMenuItem`, `i18n`, ...) are checked with
-  `list_actions` / `get_action`. Helpers the MCP does not list
-  (`createDefaultViewBody`, `createSingleTaskViewBody`,
+  `list_actions` / `get_action`. Helpers the MCP does not list (`createDefaultViewBody`, `createSingleTaskViewBody`,
   `collectRolesForPreferenceItem`, `MenuItemBody` and view body setters) come
   only from `references/menu-api.md`.
 - NAE 7 classes only: `com.netgrif.application.engine.objects.workflow.domain.menu...`.
@@ -54,8 +53,8 @@ Template and API reference: `references/menu-api.md`.
 
 1. **Collect the menu.** From the user, per item: folder path (`/`,
    `/registers`, ...), identifier (snake_case, unique across the whole
-   deployment), name with translations (`sk`, `en`, plus locales in
-   `nae/nae-frontend/nae.json` `i18n`), Material icon, content type (see
+   deployment), name with translations (`sk`, `en`, plus any other locale the
+   user names), Material icon, content type (see
    Quick reference), allowed and banned roles, order, auto-select. Ask when
    the content or the roles are unclear; do not guess roles.
 2. **Read the referenced processes.** List `processes/*/` and read the
@@ -74,24 +73,24 @@ Template and API reference: `references/menu-api.md`.
 5. **Application README.** Add the menu import to
    `processes/<app_name>/README.md` (template in `generate-process`) and put
    it last under "Deploy order".
-6. **Validate and test** with the `test-process` skill: Stage 1
-   (`validate_process` until clean); Stage 2 only with the user's approval,
+6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` until clean); Stage 2 only with the
+   user's approval,
    deploying referenced processes first. Then check the menu at
    http://localhost:4200 and errors in `nae/nae-backend/logs/nae.log`.
 
 ## Quick reference
 
-| Need | How | Note |
-|------|-----|------|
-| Folder | Item with path `/` and identifier `x`; children use path `/x` | A missing folder is created automatically, named after its path segment (`x`) with icon `folder`, no translations and no roles. Create it explicitly first. |
-| Frontend custom view | `setUseCustomView(true)`, `setCustomViewSelector("...")` | Selector must exist in the frontend (e.g. `all-cases`, `my-tasks`). |
-| Cases of a process | `createDefaultViewBody(body, query, allowedNets, headers)`, `body.setView(view)` | Case list chained to a task list. |
-| Open one task of a case | `createSingleTaskViewBody(body, query, transitionId, allowedNets, headers)` | Transition id must exist in the target process. |
-| Create button in the case list | `view.setShowCreateCaseButton(true)`, `setCreateCaseButtonTitle(i18n(...))`, `setRequireTitleInCreation(false)` | Helpers turn it off by default. |
-| Roles | `body.setAllowedRoles(collectRolesForPreferenceItem([role: processId]))`, same for `setBannedRoles` | Global role: value `GLOBAL_ROLE`. Empty allowed roles = no role restriction. |
-| Order | `body.setOrder(10d)` | A `Double`; leave gaps (10, 20, ...). |
-| Default item after login | `body.setAutoSelect(true)` | One item only. |
-| Change an existing item | `changeMenuItem`, `moveMenuItem`, `changeMenuItemOrder`, `deleteMenuItem` | Usually simpler to change the body and re-deploy. |
+| Need                           | How                                                                                                             | Note                                                                                                                                                        |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Folder                         | Item with path `/` and identifier `x`; children use path `/x`                                                   | A missing folder is created automatically, named after its path segment (`x`) with icon `folder`, no translations and no roles. Create it explicitly first. |
+| Frontend custom view           | `setUseCustomView(true)`, `setCustomViewSelector("...")`                                                        | Selector of a view built into the frontend container (e.g. `all-cases`, `my-tasks`); it is not created by the menu item.                                                                                         |
+| Cases of a process             | `createDefaultViewBody(body, query, allowedNets, headers)`, `body.setView(view)`                                | Case list chained to a task list.                                                                                                                           |
+| Open one task of a case        | `createSingleTaskViewBody(body, query, transitionId, allowedNets, headers)`                                     | Transition id must exist in the target process.                                                                                                             |
+| Create button in the case list | `view.setShowCreateCaseButton(true)`, `setCreateCaseButtonTitle(i18n(...))`, `setRequireTitleInCreation(false)` | Helpers turn it off by default.                                                                                                                             |
+| Roles                          | `body.setAllowedRoles(collectRolesForPreferenceItem([role: processId]))`, same for `setBannedRoles`             | Global role: value `GLOBAL_ROLE`. Empty allowed roles = no role restriction.                                                                                |
+| Order                          | `body.setOrder(10d)`                                                                                            | A `Double`; leave gaps (10, 20, ...).                                                                                                                       |
+| Default item after login       | `body.setAutoSelect(true)`                                                                                      | One item only.                                                                                                                                              |
+| Change an existing item        | `changeMenuItem`, `moveMenuItem`, `changeMenuItemOrder`, `deleteMenuItem`                                       | Usually simpler to change the body and re-deploy.                                                                                                           |
 
 ## Example
 
@@ -108,8 +107,8 @@ Result: one validated menu import, the README and a report.
 
 ## References
 
-- `references/menu-api.md`: the menu part of `ActionDelegate` for NAE 7.0.3
-  (signatures, body classes, role map format, deprecated methods) and the
+- `references/menu-api.md`: the menu part of `ActionDelegate` for NAE 7.0.3 (signatures, body classes, role map format,
+  deprecated methods) and the
   process template. Read it before step 4.
 - Source of truth when the reference is not enough:
   `../application-engine` at tag `v7.0.3`, file
@@ -134,7 +133,7 @@ Solution: `createOrUpdateMenuItem(body)`, unique identifiers.
 
 **An item is missing in the menu.**
 Cause: the user has none of the allowed roles, a banned role, or the custom
-view selector does not exist in the frontend.
+view selector is not a view built into the frontend container.
 Solution: check the roles of the logged-in user and the selector.
 
 **The case list is empty.**

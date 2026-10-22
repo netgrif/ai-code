@@ -120,7 +120,6 @@ Should not trigger (expected skill in brackets):
 | T11 | "Write an action that computes the total when quantity changes." (generate-action) |
 | T12 | "Validate processes/hello_world/hello_world.xml." (test-process)                   |
 | T13 | "Deploy hello_world/hello_world to the local NAE and run a case." (test-process)   |
-| T14 | "Create a custom Angular component for a signature field." (write-component)       |
 | T15 | "Write an NAE module that does OCR." (write-module)                                  |
 
 ## Performance comparison (P)

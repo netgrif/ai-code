@@ -87,8 +87,8 @@ the local instance and need user approval first.
    replaced, and the restart command. After approval: delete
    `nae/nae-backend/modules/<artifactId>/`, unzip the ZIP into it (jar and
    `libs/` directly inside), run
-   `docker compose -f nae/docker-compose.yaml restart nae`, then check
-   `docker compose -f nae/docker-compose.yaml logs nae` for load errors.
+   `docker compose -f nae/docker-compose.yaml restart nae-worker`, then check
+   `docker compose -f nae/docker-compose.yaml logs nae-worker` for load errors.
    NAE scans the folder recursively.
 9. **Use in Petriflow:** call from an action as
    `Module.<group>.<serviceBeanName>.<method>(args)`. The bean name is the

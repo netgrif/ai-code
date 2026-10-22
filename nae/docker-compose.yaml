@@ -7,6 +7,21 @@ services:
     ports:
       - "3000:3000"
 
+  nae-frontend:
+    image: netgrif/application-engine-frontend:7.0.3
+    ports:
+      - "4200:80"
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:80" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      nae-worker:
+        condition: service_healthy
+    networks:
+      - netgrif-platformnet
+
   nae-worker:
     image: netgrif/application-engine-with-mcp:7.0.3
     ports:
@@ -21,6 +36,7 @@ services:
       NETGRIF_WORKER_NODE_HOST: nae-root-engine
       NETGRIF_WORKER_NODE_NODE_TYPE: ENGINE_ROOT
       netgrif.engine.data.redis.namespace: netgrif
+      netgrif.engine.security.auth.admin-password: password
       netgrif.engine.management.endpoint.health.show-details: always
       netgrif.engine.management.health.mail.enabled: false
       netgrif.engine.management.health.elasticsearch.enabled: false
