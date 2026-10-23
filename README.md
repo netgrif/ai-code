@@ -5,10 +5,10 @@ permissions, forms, task lists, the portal and the database already run. Your AI
 process, as a [Petriflow](https://github.com/petriflow/petriflow) model, checks it and deploys it, and it becomes a
 working application in the portal.
 
-![A Word request goes into the AI assistant and comes out as a running onboarding app](docs/media/demo.gif)
+![docker compose starts Netgrif, the AI assistant turns a leave request brief into a process and deploys it after a yes, and the app runs in the portal](docs/media/demo.gif)
 
-<sub>A Word document from HR went in unedited. A few minutes later HR raises a request, the manager approves it and IT
-ticks off the accounts.</sub>
+<sub>Start Netgrif with one command, hand your AI assistant the brief, approve its plan, and the app runs in the
+portal.</sub>
 
 ## 1. Start Netgrif
 
