@@ -71,9 +71,9 @@ validated.
    ones (rule in Critical rules).
 6. **Write the XML**, data-centric processes first, then the processes that
    reference them. Follow the schema and the naming rules below. Per process:
-   places, transitions, arcs, roles and permissions, data, forms (data groups),
-   event stubs. Channels and taskRef embedding: see Quick reference. Set
-   `<version>` by the rule in Critical rules.
+   places, transitions, arcs, roles and permissions, data, forms (data groups,
+   laid out as in Form layout), event stubs. Channels and taskRef embedding:
+   see Quick reference. Set`<version>` by the rule in Critical rules.
 7. **Actions.** Before the first action, ask the user once per session:
    "Should the actions be written by a subagent, or inline here?" Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
@@ -205,6 +205,32 @@ Process map rules (a Mermaid diagram, rendered by GitHub):
 - A single process without links is one node and no arrows.
 - The map, "Channels" and "Dependencies on other applications" must agree. The
   deploy order lists the targets of the arrows first.
+
+## Form layout
+
+Every form uses a grid in two columns. Take the exact element names and order
+from the schema (`dataGroup`, `dataRef`, `layout`) of the chosen version.
+
+- A `dataGroup` has `<layout>grid</layout>`. The grid is 4 units wide, so
+  half width is `<cols>2</cols>` and full width is `<cols>4</cols>`. Do not use
+  `<cols>1</cols>` for a column.
+- Every `dataRef` carries its own `<layout>` with `x`, `y`, `rows`, `cols`,
+  `offset`, `template` and `appearance`. Left column `x=0`, right column
+  `x=2`. Use `<rows>1</rows>`, `<offset>0</offset>`, `<template>material</template>`,
+  `<appearance>outline</appearance>` unless the requirement says otherwise.
+- Put fields that belong together side by side in one row (same `y`): first
+  and last name, street and number, postal code and city, date from and date
+  to, amount and currency. Related fields go in the same `dataGroup`; use a
+  separate `dataGroup` (with a `title`) per topic, e.g. personal data,
+  address, contact.
+- Full width (`x=0`, `cols=4`) for fields that need room or stand alone: long
+  text (textarea), files, taskRef, buttons, i18n text, and a field with no
+  partner. Do not pair unrelated fields only to fill the row.
+- Rows are numbered by `y` from 0, one row per pair, with no gaps. A row with a
+  single field of half width stays at `x=0`.
+- Validate after laying out (`validate_process`), and tell the user the
+  grouping you chose in the report.
+
 ## Quick reference
 
 | Need                  | Source                                                 |
@@ -311,6 +337,8 @@ deviations with reasons.
 - An action touching two or more other cases without failure handling (A3).
 - A data-centric process whose actions create, delete or call other cases.
 - Skipping `validate_process` after a change, or validating the old file.
+- A form with all fields stacked in one column, or unrelated fields paired in
+  one row.
 - A process id without the application prefix, or a prefix that does not match
   the folder name.
 - A new data-centric process for an entity another application already owns.
