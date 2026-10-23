@@ -11,15 +11,15 @@ modules are available for the cases where a process alone is not enough.
 
 ## What's inside
 
-| Path                           | Purpose                                                                                                          |
-|--------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Path                           | Purpose                                                                                                               |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `nae/docker-compose.yaml`      | Local stack: Application Engine (`:8080`), frontend (`:4200`), Petriflow MCP (`:3000`), MongoDB, Elasticsearch, Redis |
-| `nae/nae-backend/modules/`     | Built modules, loaded by the engine at start                                                                     |
-| `nae/nae-backend/logs/`        | Engine logs, mounted from the container                                                                          |
-| `nae/nae-backend/storage/`     | Engine storage, mounted from the container                                                                       |
-| `processes/`                   | Petriflow processes, one subfolder per application (includes `hello_world`)                                      |
-| `modules/`                     | Source code of custom modules, one Maven project per module                                                      |
-| `.agents/skills/`, `AGENTS.md` | Optional instructions for AI coding agents (see below)                                                           |
+| `nae/nae-backend/modules/`     | Built modules, loaded by the engine at start                                                                          |
+| `nae/nae-backend/logs/`        | Engine logs, mounted from the container                                                                               |
+| `nae/nae-backend/storage/`     | Engine storage, mounted from the container                                                                            |
+| `processes/`                   | Petriflow processes, one subfolder per application (includes `hello_world`)                                           |
+| `modules/`                     | Source code of custom modules, one Maven project per module                                                           |
+| `.agents/skills/`, `AGENTS.md` | Optional instructions for AI coding agents (see below)                                                                |
 
 The frontend is a prebuilt container image, so there are no frontend sources in this repository.
 
@@ -81,8 +81,10 @@ The repository is prepared for AI coding agents that support `AGENTS.md`, skills
 - `AGENTS.md` explains the project, setup, and rules for development and testing.
 - `.agents/skills/` contains playbooks for generating processes, actions and the application menu, testing a process,
   and writing modules.
-- `.mcp.json` registers two MCP servers: `petriflow-mcp` (`http://localhost:3000/mcp`, run locally by Docker Compose) for validation
-  and the Action API reference, and `engine-mcp` (`http://localhost:8080/mcp`, needs the running engine) for deploying and running processes on
+- `.mcp.json` registers two MCP servers: `petriflow-mcp` (`http://localhost:3000/mcp`, run locally by Docker Compose)
+  for validation
+  and the Action API reference, and `engine-mcp` (`http://localhost:8080/mcp`, needs the running engine) for deploying
+  and running processes on
   your engine.
 
 Using an agent is optional. Everything above works without one.
@@ -96,4 +98,4 @@ Using an agent is optional. Everything above works without one.
 
 ## License
 
-Licensed under the Apache License 2.0. See [LICENSE.txt](LICENSE.txt).
+Licensed under the NETGRIF Community License 1.1. See [LICENSE.txt](LICENSE.txt).
