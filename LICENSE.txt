@@ -1,9 +1,9 @@
                            NETGRIF Community License
-                           Version 1.1, October 2026
+                           Version 2.0, 23.10.2026
                           https://netgrif.com/license
 
    This NETGRIF Community License (the "License") sets out the terms on
-   which NETGRIF, s. r. o., with its registered office at Dúbravská cesta
+   which NETGRIF, s.r.o., with its registered office at Dúbravská cesta
    14, 841 04 Bratislava – mestská časť Karlova Ves, Slovak Republic,
    Company ID No.: 50 903 403, registered in the Commercial Register of the
    Municipal Court Bratislava III, Section Sro, Insert No. 119927/B (the
@@ -120,12 +120,9 @@
          proprietary notices contained in the Software;
 
       e. use the Licensor's names, logos or trademarks, except as needed to
-         identify the Software and its origin as required by this License;
+         identify the Software and its origin as required by this License; or
 
-      f. disable, alter or circumvent any technical measures or licence
-         verification mechanisms contained in the Software, if any; or
-
-      g. Use the Software in breach of applicable law.
+      f. Use the Software in breach of applicable law.
 
    5. Distribution
 
@@ -222,10 +219,10 @@
 
    12. Versions of the Software and of this License
 
-      This License applies to the versions of the Software that the Licensor
-      publishes under it, starting with versions published after 23rd October 2026.
-      Versions of the Software published before that date under NETGRIF
-      Community License, Version 1.0, remain governed by that licence.
+      This License applies to all versions of the Software that the Licensor
+      publishes on or after 23.10.2026, regardless of their version number.
+      of the Software published before that date under NETGRIF Community License,
+      Version 1.0, remain governed by that licence.
 
       The Licensor may publish new versions of this License. Each version of
       the Software is governed by the version of the License distributed
