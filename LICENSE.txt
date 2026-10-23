@@ -223,7 +223,7 @@
    12. Versions of the Software and of this License
 
       This License applies to the versions of the Software that the Licensor
-      publishes under it, starting with versions published after October 2026.
+      publishes under it, starting with versions published after 23rd October 2026.
       Versions of the Software published before that date under NETGRIF
       Community License, Version 1.0, remain governed by that licence.
 
