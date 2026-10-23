@@ -98,4 +98,4 @@ Using an agent is optional. Everything above works without one.
 
 ## License
 
-Licensed under the NETGRIF Community License 1.1. See [LICENSE.txt](LICENSE.txt).
+Licensed under the NETGRIF Community License 2.0. See [LICENSE.txt](LICENSE.txt).
