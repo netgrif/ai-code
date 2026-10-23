@@ -83,18 +83,24 @@ and stop before module work.
 
 **Approval.** Anything that changes the local NAE or the machine needs user
 approval first: deploying a process, creating a case, executing a task,
-copying/removing a module, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
+creating or deleting users, assigning roles, copying/removing a module, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
 Docker volumes or data.
 
 **Credentials.** The generated super admin password is a secret. Read it from the
 log only when needed, and never write it into files, commits, reports or chat
 output.
 
+**Test users.** Role tests use disposable users that you create (with a
+recognizable name prefix) and their impersonation tokens. Never test with the
+super admin or existing users. Treat tokens like the password: never write them
+into files, commits, reports or chat output. After every test scenario delete
+the test cases and users you created; deployed processes and the menu stay.
+
 **Processes.**
 
 - An application is a folder `processes/<app_name>/` with process XMLs and a
-  short `README.md`. Applications only separate business logic; all deployed
-  processes can reference each other.
+  short `README.md` that includes a process map (Mermaid diagram). Applications
+  only separate business logic; all deployed processes can reference each other.
 - `app_name` and process names are snake_case. The process `id` is
   `<app_name>/<process_name>` (e.g. `hello_world/hello_world`), unique across
   the whole NAE deployment. The file is `processes/<app_name>/<process_name>.xml`.

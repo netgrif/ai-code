@@ -72,7 +72,8 @@ Template and API reference: `references/menu-api.md`.
    rules).
 5. **Application README.** Add the menu import to
    `processes/<app_name>/README.md` (template in `generate-process`) and put
-   it last under "Deploy order".
+   it last under "Deploy order". Add it to the process map as a node with a
+   `-.->` arrow labelled `menu` to each process it exposes.
 6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` until clean); Stage 2 only with the
    user's approval,
    deploying referenced processes first. Then check the menu at

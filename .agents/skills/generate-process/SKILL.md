@@ -21,18 +21,27 @@ validated.
 ## Critical rules
 
 - Every Petriflow construct comes from the Petriflow MCP (schema, overview,
-  examples) for the chosen version, never from memory.
+  examples) for the chosen Petriflow version, never from memory.
 - No XML before the user approved the architecture (step 4).
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
 - `validate_process` after every change to a process file, until clean.
-- Deploying, creating cases and executing tasks need user approval (`test-process` Stage 2).
+- Two versions, do not mix them up: the *Petriflow version* is the language
+  version from `list_versions`; the *process version* is the `<version>`
+  element of the XML (a new process starts at `1.0.0`).
+- The process version never changes during your own iterations (fixing
+  validation errors or failed test steps, refining). It is bumped once per
+  user instruction to edit an already implemented process: minor for added or
+  changed behavior, major for removed fields or transitions; ask when unclear.
+  Redeploys during iteration use `replaceExisting` (see `test-process`).
+- Deploying, creating cases and test users, and executing tasks need user
+  approval (`test-process` Stage 2).
 
 ## Steps
 
 1. **Precondition.** The `petriflow-mcp` MCP must answer. If it does not, see
    Troubleshooting; never write XML from memory.
-2. **Version and language.**
+2. **Petriflow version and language.**
     - Read `petriflow://versions` (or tool `list_versions`) and take the latest
       semver, unless the user or project pins one.
     - Read `petriflow://versions/{version}/overview`.
@@ -43,6 +52,7 @@ validated.
     - List `processes/*/` and read each application's `README.md`. Note the
       existing process ids, roles and data-centric processes; reuse them
       instead of creating duplicates.
+    - When changing an existing process, note its current `<version>`.
     - Write down: roles (actors), data, steps, who can supply each field, how
       many users act at the same time, what users must not see of each other,
       and which data outlives one run. Ask the user for any of these that the
@@ -56,11 +66,14 @@ validated.
    links, dependencies on processes of other applications, and file paths
    `processes/<app_name>/<process_name>.xml`. **Write no XML until the user approves the architecture.** A single
    process
-   still goes through this gate (one short line is enough).
+   still goes through this gate (one short line is enough). State the process
+   version of each process in it: `1.0.0` for new ones, old → new for changed
+   ones (rule in Critical rules).
 6. **Write the XML**, data-centric processes first, then the processes that
    reference them. Follow the schema and the naming rules below. Per process:
    places, transitions, arcs, roles and permissions, data, forms (data groups),
-   event stubs. Channels and taskRef embedding: see Quick reference.
+   event stubs. Channels and taskRef embedding: see Quick reference. Set
+   `<version>` by the rule in Critical rules.
 7. **Actions.** Before the first action, ask the user once per session:
    "Should the actions be written by a subagent, or inline here?" Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
@@ -71,11 +84,17 @@ validated.
       changed, and after each batch of actions. Fix and re-validate until clean.
     - Stage 2 (live run on local NAE) once at the end, only with the user's
       approval. Deploy referenced processes before the ones that reference them,
-      also across applications.
+      also across applications. Redeploys while iterating use `replaceExisting`
+      and leave the process version unchanged (see `test-process`). When the
+      process has role permissions or user bindings, Stage 2 includes role
+      scenarios with impersonated test users. Every scenario cleans up its test
+      cases and users; the processes stay deployed.
 9. **Review** against the checklist in `references/modeling-principles.md`.
-   Fix violations or list them with a reason.
+   Fix violations or list them with a reason. Per-user visibility (P9) is
+   verified by the role scenarios of `test-process`, not by reading the XML.
 10. **Application README.** Create or update `processes/<app_name>/README.md`
-    for every application you touched (template below).
+    for every application you touched (template below), including the process
+    map: update it whenever a process, channel or reference changes.
 11. **Report** (see Output).
 
 Before step 4, when the requirement has more than one actor or more than one
@@ -126,7 +145,7 @@ Which application:
 
 Application README template (keep it this short):
 
-```markdown
+````markdown
 # <app_name>
 
 <Purpose of the application in 1–2 sentences.>
@@ -135,6 +154,24 @@ Application README template (keep it this short):
 
 | Process id | File | Kind | Purpose | Roles |
 |------------|------|------|---------|-------|
+
+## Process map
+
+```mermaid
+flowchart LR
+    subgraph this_app["<app_name>"]
+        process_a["<app_name>/process_a<br/>process-centric"]
+        process_b["<app_name>/process_b<br/>process-centric"]
+        process_c[("<app_name>/process_c<br/>data-centric")]
+    end
+    subgraph other_app["<other_app_name>"]
+        process_d[("<other_app_name>/process_d<br/>data-centric")]
+    end
+    process_a ==>|"creates case"| process_b
+    process_b -->|"channel: <name>"| process_a
+    process_a -.->|"caseRef"| process_c
+    process_b -.->|"taskRef"| process_d
+```
 
 ## Channels
 
@@ -147,11 +184,27 @@ Application README template (keep it this short):
 ## Deploy order
 
 1. <process ids, referenced processes first>
-```
+````
 
 Kind is `data-centric`, `process-centric` (P6) or `standalone` (a process with
 no links to other cases).
 
+Process map rules (a Mermaid diagram, rendered by GitHub):
+
+- One node per process of the application, plus every process of other
+  applications it uses, inside a subgraph titled with that application's name.
+- Node id = process name (snake_case, no `/`). Label = full process id, `<br/>`,
+  kind. Shape by kind: `[("...")]` data-centric, `["..."]` process-centric,
+  `("...")` standalone.
+- One arrow per relation, from the acting process to its target: `-->` a
+  channel, labelled `channel: <name>`; `-.->` a caseRef or taskRef, labelled
+  with the kind; `==>` creates a case, labelled `creates case`. A menu import
+  is a node with `-.->` arrows labelled `menu` to the processes it exposes.
+- Use only `flowchart LR`, subgraphs, these shapes and arrows, and quoted
+  labels. No styling, click handlers or roles.
+- A single process without links is one node and no arrows.
+- The map, "Channels" and "Dependencies on other applications" must agree. The
+  deploy order lists the targets of the arrows first.
 ## Quick reference
 
 | Need                  | Source                                                 |
@@ -230,18 +283,25 @@ Cause: ids are unique across the whole NAE deployment.
 Solution: if it is the same process, change that file instead; otherwise pick
 another process name and confirm it with the user.
 
+**Deploy fails because the same process id and version is already deployed.**
+Cause: an iteration redeploys the same `<version>` without `replaceExisting`;
+the engine refuses that.
+Solution: do not bump the version. Check `list_processes`, then redeploy with
+`replaceExisting: true` as described in `test-process`.
+
 ## Output
 
-Petriflow version used; the approved architecture (applications, full process
+Petriflow version used; process versions (new, unchanged, or old → new); the approved architecture (applications, full process
 ids); files written, including application READMEs; per file the
 `validate_process` result (issues → fixes → clean); actions written;
-Stage 2 result or why it did not run; principle
+Stage 2 result (including replaced processes and the role scenario matrix) or
+why it did not run; principle
 deviations with reasons.
 
 ## Common mistakes
 
 - Writing XML before the user approved the architecture.
-- Hardcoding a version or copying the version/syntax of an old process.
+- Hardcoding a Petriflow version or copying the version/syntax of an old process.
 - One process with a copied transition per user (`approve_user_1..n`) when the
   number of users is runtime data.
 - Privacy through one shared role plus "users promise not to look".
@@ -255,3 +315,10 @@ deviations with reasons.
   the folder name.
 - A new data-centric process for an entity another application already owns.
 - Forgetting to create or update the application `README.md`.
+- A process map that is missing or out of sync with the Channels and
+  Dependencies sections.
+- Bumping the process version during your own iterations, or to get around a
+  refused deploy.
+- Not bumping the process version when the user gave a new instruction to edit
+  an implemented process.
+- Mixing up the Petriflow version and the process `<version>`.

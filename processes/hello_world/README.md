@@ -9,6 +9,13 @@ then asks whether the user is done; if not, it starts over.
 |---------------------------|-------------------|------------|------------------------------------------|----------------------------|
 | `hello_world/hello_world` | `hello_world.xml` | standalone | Greet the user, repeat until they finish | default and anonymous role |
 
+## Process map
+
+```mermaid
+flowchart LR
+    hello_world("hello_world/hello_world<br/>standalone")
+```
+
 ## Channels
 
 None.
