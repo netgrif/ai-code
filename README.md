@@ -1,101 +1,109 @@
-# Netgrif Platform Starter
+# Describe a business process. Your AI assistant turns it into a running app.
 
-A template for building applications on the [Netgrif Platform](https://platform.netgrif.cloud).
-It gives you a local Netgrif Application Engine (NAE) stack with the standard Netgrif frontend, and a place for your
-[Petriflow](https://github.com/petriflow/petriflow) processes, so you can go from an empty folder to a running
-workflow application quickly.
+**Netgrif AI Code Starter** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for your AI
+coding assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
+[Petriflow](https://petriflow.org/#/) (workflow, data, forms, roles, actions and the menu), checks it and runs it.
+Login, the portal, task lists and the database are already there. If you need more, extend it with your own Java
+modules, or with your own Angular frontend through the
+[frontend starter](https://github.com/netgrif/nae-frontend-application-starter).
 
-In a Netgrif application the business logic lives in **Petriflow processes** (Petri net based workflows described in
-XML, with Groovy actions). The engine runs them, and the frontend lets users work with cases and tasks. Backend
-modules are available for the cases where a process alone is not enough.
+**All you need is [Docker](https://www.docker.com/products/docker-desktop/) and an AI coding assistant.** Everything
+else runs in containers: no Java, Node or database to install.
 
-## What's inside
+![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)
 
-| Path                           | Purpose                                                                                                               |
-|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `nae/docker-compose.yaml`      | Local stack: Application Engine (`:8080`), frontend (`:4200`), Petriflow MCP (`:3000`), MongoDB, Elasticsearch, Redis |
-| `nae/nae-backend/modules/`     | Built modules, loaded by the engine at start                                                                          |
-| `nae/nae-backend/logs/`        | Engine logs, mounted from the container                                                                               |
-| `nae/nae-backend/storage/`     | Engine storage, mounted from the container                                                                            |
-| `processes/`                   | Petriflow processes, one subfolder per application (includes `hello_world`)                                           |
-| `modules/`                     | Source code of custom modules, one Maven project per module                                                           |
-| `.agents/skills/`, `AGENTS.md` | Optional instructions for AI coding agents (see below)                                                                |
+<sub>HR's Word document goes to the AI assistant as it is. A few minutes later HR raises a request, the manager approves
+it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.
+[Watch it as a video](docs/media/demo.mp4)</sub>
 
-The frontend is a prebuilt container image, so there are no frontend sources in this repository.
+## Get started
 
-## Requirements
+**1. Make it your own.** This repository is a template. Click **Use this template → Create a new repository** at the
+top of this page and name it after your application, for example `onboarding-app`.
 
-- Docker with Docker Compose
-- Java 21 and Maven, **required only if you develop custom modules** (not needed to write processes)
+**2. Start Netgrif.** Clone your new repository, start Docker and run:
 
-## Getting started
+```bash
+git clone https://github.com/<your-account>/<your-app>.git
+cd <your-app>/nae
+docker compose up -d
+```
 
-1. Create your own repository from this template (**Use this template** on GitHub) or clone it.
+The first start downloads the images (the engine, the frontend, the databases) and takes a few minutes; later starts
+take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`. The super
+admin is `super@netgrif.com`; its password is set in [`nae/docker-compose.yaml`](nae/docker-compose.yaml)
+(`netgrif.engine.security.auth.admin-password`). Change it there before you share the machine with anyone.
 
-2. Start the stack:
+**3. Describe what the business needs.** Open the folder in your AI coding assistant: Claude Code, Codex, Cursor,
+GitHub Copilot or Gemini CLI. There is nothing to configure. Hand it a Word document, an e-mail or a diagram you
+already have, or tell it the way you would tell a colleague:
 
-   ```bash
-   cd nae
-   docker compose up -d
-   ```
+> We need an app for **[your process]**. **[Who]** starts it and fills in **[what]**.
+> **[Who]** approves it, and if they send it back, **[what happens]**. After approval
+> **[who]** does **[what]**. Everyone should see where each request is stuck.
+> Build it on this platform and prove it runs in the engine before you tell me it is done.
 
-   Wait until the engine is up. This returns status `UP` when it is ready:
+The assistant writes the application into `processes/<app_name>/`, validates it, shows you the plan and deploys it
+after your yes. Then it tells you where to sign in.
 
-   ```bash
-   curl http://localhost:8080/manage/health
-   ```
+**4. Use it, update it if needed.** Work in the app and ask for changes in plain words. Each change is a new version;
+running cases keep theirs. The last prototype is the app.
 
-   The frontend container starts after the engine is healthy.
+**5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
+company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
+Production use needs a commercial licence.
 
-3. Open <http://localhost:4200> and log in as `super@netgrif.com`. The password is generated on the first run and
-   printed in `nae/nae-backend/logs/nae.log`. The frontend is a single-page app, so your browser calls the engine on
-   `http://localhost:8080` directly.
+## What it is good for
 
-4. Import the example process. In the UI, open the "more" icon (bottom left), choose the **Workflow** view, click **+**,
-   select `processes/hello_world/hello_world.xml` and click **Upload**. Then create a case from it and work through its
-   tasks.
+Netgrif is the tool for when you need **processes, tasks and an overview of anything that goes on**: who does what,
+in which order, with which data, and where each thing stands right now. In a large company, a small team, a school,
+a municipality, a club or a one-off event alike.
 
-To stop the stack, run `docker compose down` in the `nae` folder.
+**A good fit:** any process where people, steps, decisions and documents meet, inside an organisation or open to its
+customers, members and partners:
 
-## Developing your application
+- **Requests and approvals**, where someone asks, someone decides and everyone sees the state: leave, purchases,
+  expenses, access rights
+- **Case handling**, where a case moves through several people or teams until it is resolved: complaints, claims,
+  incidents
+- **Forms with a back office**, where a customer, citizen or member fills in a form and staff process it:
+  applications, registrations, orders
+- **Records and registers** of anything you need to manage over time: assets, equipment, vehicles, members,
+  suppliers, inspections and their renewals
 
-Implement a requirement with the first of these that works:
+<details>
+<summary><strong>More examples</strong></summary>
 
-1. **Petriflow process.** Add your XML under `processes/<your-app>/`. Data, tasks, forms, roles, and Groovy actions all
-   live there. The application menu is a process too. This is the default for application logic.
-2. **Module.** Only if the logic cannot be a process or action, for example a whole service such as OCR. Modules are
-   Java Spring Boot projects loaded into the engine at start; their services are called from actions as
-   `Module.<group>.<bean>.<method>()`. Developing one requires Java 21 and Maven. Put the source in
-   `modules/<module-name>/` and the built output in `nae/nae-backend/modules/`, then restart the engine
-   (`docker compose restart nae-worker`). See the
-   [module guide](https://platform.netgrif.cloud/ecosystem/modules/custom-module).
+- **Contracts and documents**, from intake and review to signature and archive
+- **Service desks and ticketing**, with queues, deadlines and escalation
+- **Onboarding and offboarding**, where HR, managers and IT each tick off their part
+- **Projects, events and recurring work**, from a team's checklist to the preparation of a conference or a season of a
+  sports club
+- **Orchestration** of people and existing systems into one task list
 
-The user interface is the standard Netgrif frontend. It is not customized in this repository.
+</details>
 
-Built artifacts (jars, zips, `target/`) are ignored by git and should not be committed.
+Anything that is today a spreadsheet, an e-mail thread or a shared folder with rules nobody wrote down is a candidate.
 
-## Working with AI agents
+**Not a good fit:** consumer mobile apps, games, marketing websites, design-first custom UIs, real-time analytics or
+streaming data. The platform draws the screens from the model, so if the screen *is* the product, this is the wrong
+tool.
 
-The repository is prepared for AI coding agents that support `AGENTS.md`, skills, and MCP:
+## What it is made of
 
-- `AGENTS.md` explains the project, setup, and rules for development and testing.
-- `.agents/skills/` contains playbooks for generating processes, actions and the application menu, testing a process,
-  and writing modules.
-- `.mcp.json` registers two MCP servers: `petriflow-mcp` (`http://localhost:3000/mcp`, run locally by Docker Compose)
-  for validation
-  and the Action API reference, and `engine-mcp` (`http://localhost:8080/mcp`, needs the running engine) for deploying
-  and running processes on
-  your engine.
+| Part | What it does | Where |
+|---|---|---|
+| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Frontend** (`netgrif/application-engine-frontend:7.0.3`) | The portal your users work in, at `localhost:4200` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`) | Petriflow knowledge and validation for the assistant, at `localhost:3000` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **MongoDB, Elasticsearch, Redis** | Data, search and cache | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Rules for the assistant** | How to build, check and test a Netgrif application, and when to ask you | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
+| **Your application** | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example) | [`processes/`](processes/README.md) |
+| **Your modules** (optional) | Java code the engine loads at start | [`modules/`](modules/README.md) |
 
-Using an agent is optional. Everything above works without one.
+More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
-## Learn more
+## Licence
 
-- [Netgrif Platform documentation](https://platform.netgrif.cloud)
-- [Petriflow](https://github.com/petriflow/petriflow), the process language and its action API docs
-- [Netgrif Application Engine](https://github.com/netgrif/application-engine)
-- [Community](https://community.netgrif.com)
-
-## License
-
-Licensed under the NETGRIF Community License 2.0. See [LICENSE.txt](LICENSE.txt).
+**NETGRIF Community License 2.0**: free for development, testing and other non-production use, source-available, not
+open source. Production use needs a commercial licence. See [LICENSE.txt](LICENSE.txt).
