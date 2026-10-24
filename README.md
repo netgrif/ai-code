@@ -1,77 +1,99 @@
 # Describe a business process. Your AI assistant turns it into a running app.
 
-**Netgrif AI Code Starter** runs the [Netgrif](https://netgrif.com) platform on your machine. Login, roles,
-permissions, forms, task lists, the portal and the database already run. Your AI assistant writes only the business
-process, as a [Petriflow](https://github.com/petriflow/petriflow) model, checks it and deploys it, and it becomes a
-working application in the portal.
+**Netgrif AI Code Starter** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for your AI
+coding assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
+[Petriflow](https://petriflow.org/#/) (workflow, data, forms, roles, actions and the menu), checks it and runs it.
+Login, the portal, task lists and the database are already there.
 
-![docker compose starts Netgrif, the AI assistant turns a leave request brief into a process and deploys it after a yes, and the app runs in the portal](docs/media/demo.gif)
+**All you need is [Docker](https://www.docker.com/products/docker-desktop/) and an AI coding assistant.** Everything
+else runs in containers: no Java, Node or database to install.
 
-<sub>Start Netgrif with one command, hand your AI assistant the brief, approve its plan, and the app runs in the
-portal.</sub>
+![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)
 
-## 1. Start Netgrif
+<sub>HR's Word document goes to the AI assistant as it is. A few minutes later HR raises a request, the manager approves
+it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.</sub>
 
-You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) and Git.
+## Get started
+
+**1. Make it your own.** This repository is a template. Click **Use this template → Create a new repository** at the
+top of this page and name it after your application, for example `onboarding-app`.
+
+**2. Start Netgrif.** Clone your new repository, start Docker and run:
 
 ```bash
-git clone https://github.com/netgrif/starter.git
-cd starter/nae
+git clone https://github.com/<your-account>/<your-app>.git
+cd <your-app>/nae
 docker compose up -d
 ```
 
-Or open the folder in **IntelliJ IDEA** or **VS Code**, open `nae/docker-compose.yaml` and click the green ▶ next to
-`services:`.
+Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`. The super
+admin is `super@netgrif.com`; the password is printed in `nae/nae-backend/logs/nae.log` on the first start.
 
-When `curl http://localhost:8080/manage/health` returns `UP`, open **http://localhost:4200** and sign in as
-`super@netgrif.com`. The password is printed in `nae/nae-backend/logs/nae.log` on the first start.
-
-## 2. Describe your business problem
-
-Open the repository folder in your AI assistant: Claude Code, Codex, Cursor, GitHub Copilot or Gemini CLI. The rules
-for the platform (`AGENTS.md`, `.agents/skills/`) and its two MCP servers (`.mcp.json`) are already in the repository,
-so there is nothing to configure. Then tell it what your business needs, the way you would tell a colleague:
+**3. Describe what the business needs.** Open the folder in your AI coding assistant: Claude Code, Codex, Cursor,
+GitHub Copilot or Gemini CLI. There is nothing to configure. Hand it a Word document, an e-mail or a diagram you
+already have, or tell it the way you would tell a colleague:
 
 > We need an app for **[your process]**. **[Who]** starts it and fills in **[what]**.
 > **[Who]** approves it, and if they send it back, **[what happens]**. After approval
 > **[who]** does **[what]**. Everyone should see where each request is stuck.
 > Build it on this platform and prove it runs in the engine before you tell me it is done.
 
-A Word document, an e-mail or a diagram you already have works too.
+The assistant writes the application into `processes/<app_name>/`, validates it, shows you the plan and deploys it
+after your yes. Then it tells you where to sign in.
 
-The assistant writes the process into `processes/<app_name>/` and validates it. Before it deploys anything, creates
-cases or test users, it shows you the plan and waits for your yes. Then open http://localhost:4200 and work in the
-app. Ask for changes in plain words until the prototype is the app.
+**4. Use it, update it if needed.** Work in the app and ask for changes in plain words. Each change is a new version;
+running cases keep theirs. The last prototype is the app.
+
+**5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
+company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
+Production use needs a commercial licence.
 
 ## What it is good for
 
-**A good fit:** any process where people, steps, decisions and documents meet, inside a company or open to its
-customers and partners:
+Netgrif is the tool for when you need **processes, tasks and an overview of anything that goes on**: who does what,
+in which order, with which data, and where each thing stands right now. In a large company, a small team, a school,
+a municipality, a club or a one-off event alike.
 
-- **Requests and approvals**, where someone asks, someone decides and everyone sees the state
-- **Case handling**, where a case moves through several teams until it is resolved
-- **Forms with a back office**, where a customer or partner fills in a form and staff process it
+**A good fit:** any process where people, steps, decisions and documents meet, inside an organisation or open to its
+customers, members and partners:
+
+- **Requests and approvals**, where someone asks, someone decides and everyone sees the state: leave, purchases,
+  expenses, access rights
+- **Case handling**, where a case moves through several people or teams until it is resolved: complaints, claims,
+  incidents
+- **Forms with a back office**, where a customer, citizen or member fills in a form and staff process it:
+  applications, registrations, orders
 - **Contracts and documents**, from intake and review to signature and archive
 - **Service desks and ticketing**, with queues, deadlines and escalation
+- **Onboarding and offboarding**, where HR, managers and IT each tick off their part
+- **Records and registers** of anything you need to manage over time: assets, equipment, vehicles, members,
+  suppliers, inspections and their renewals
+- **Projects, events and recurring work**, from a team's checklist to the preparation of a conference or a season of a
+  sports club
+- **Orchestration** of people and existing systems into one task list
 
 Anything that is today a spreadsheet, an e-mail thread or a shared folder with rules nobody wrote down is a candidate.
 
 **Not a good fit:** consumer mobile apps, games, marketing websites, design-first custom UIs, real-time analytics or
-streaming data. The platform draws the screens from the process, so if the screen *is* the product, this is the wrong
+streaming data. The platform draws the screens from the model, so if the screen *is* the product, this is the wrong
 tool.
 
-## More
+When an application needs more than a process can do, such as a new integration or service, it can be extended with
+your own Java modules (needs Java 21 and Maven, see [modules/README.md](modules/README.md)).
 
-- **Without AI:** import [`processes/hello_world/hello_world.xml`](processes/hello_world/hello_world.xml) in the UI
-  ("more" icon bottom left → **Workflow** → **+** → **Upload**), or model processes in the
-  [Application Builder](https://builder.netgrif.cloud/).
-- **The stack, ports and commands:** [nae/README.md](nae/README.md)
-- **Processes and conventions:** [processes/README.md](processes/README.md)
-- **Custom Java modules** (only when a process is not enough, needs Java 21 and Maven):
-  [modules/README.md](modules/README.md)
-- **What the AI assistant follows:** [AGENTS.md](AGENTS.md)
-- **Shared portals with your company login, and Netgrif AI Chat for the people who use your apps:** that is
-  Netgrif AI Suite Enterprise. [Contact Netgrif](https://netgrif.com/contact-us/).
+## What it is made of
+
+| Part | What it does | Where |
+|---|---|---|
+| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Frontend** (`netgrif/application-engine-frontend:7.0.3`) | The portal your users work in, at `localhost:4200` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`) | Petriflow knowledge and validation for the assistant, at `localhost:3000` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **MongoDB, Elasticsearch, Redis** | Data, search and cache | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Rules for the assistant** | How to build, check and test a Netgrif application, and when to ask you | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
+| **Your application** | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example) | [`processes/`](processes/README.md) |
+| **Your modules** (optional) | Java code the engine loads at start | [`modules/`](modules/README.md) |
+
+More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
 ## Licence
 
