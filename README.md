@@ -50,7 +50,7 @@ running cases keep theirs. The last prototype is the app.
 
 **5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
 company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
-Production use needs a licence: see [Licence and production use](#licence-and-production-use).
+Production use needs a commercial licence: see [Licence and production use](#licence-and-production-use).
 
 ## What it is good for
 
@@ -104,12 +104,12 @@ More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
 ## Licence and production use
 
-This repository is for **development and testing only**. To run your applications in production in your company,
-you need a licensed version of the Netgrif platform.
+This repository is under the **NETGRIF Community License 2.0**: source-available, not open source, for
+**development and testing only**. See [LICENSE.txt](LICENSE.txt).
 
-- **Buy a licence now:** [contact our sales team](https://netgrif.com/contact-us/), they will be happy to help.
-- **Prefer to buy it yourself?** We are building a customer portal where you will buy Netgrif licences on your own.
-  [Join the waiting list](https://netgrif.com/licence-waiting-list/) and we will let you know when it opens.
+To run your applications in production in your company, you need a **commercial licence** for the Netgrif platform.
 
-The code is under the **NETGRIF Community License 2.0**: source-available, not open source. See
-[LICENSE.txt](LICENSE.txt).
+- **Buy a commercial licence now:** [contact our sales team](https://netgrif.com/contact-us/), they will be happy to
+  help.
+- **Prefer to buy it yourself?** We are building a customer portal where you will buy Netgrif commercial licences on
+  your own. [Join the waiting list](https://netgrif.com/licence-waiting-list/) and we will let you know when it opens.
