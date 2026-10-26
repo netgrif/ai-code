@@ -1,13 +1,13 @@
 # Describe a business process. Your AI assistant turns it into a running app.
 
-**Netgrif AI Code Starter** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for your AI
-coding assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
+**Netgrif AI Code** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for any AI coding
+assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
 [Petriflow](https://petriflow.org/#/) (workflow, data, forms, roles, actions and the menu), checks it and runs it.
 Login, the portal, task lists and the database are already there. If you need more, extend it with your own Java
 modules, or with your own Angular frontend through the
 [frontend starter](https://github.com/netgrif/nae-frontend-application-starter).
 
-**All you need is [Docker](https://www.docker.com/products/docker-desktop/) and an AI coding assistant.** Everything
+**All you need is [Docker](https://www.docker.com/products/docker-desktop/) and any AI coding assistant.** Everything
 else runs in containers: no Java, Node or database to install.
 
 [![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)](https://youtu.be/TODO-starter)
@@ -34,8 +34,8 @@ take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localh
 `admin`; its password is set in [`docker-compose.yaml`](docker-compose.yaml)
 (`netgrif.engine.security.auth.admin-password`). Change it there before you share the machine with anyone.
 
-**3. Describe what the business needs.** Open the folder in your AI coding assistant: Claude Code, Codex, Cursor,
-GitHub Copilot or Gemini CLI. There is nothing to configure. Hand it a Word document, an e-mail or a diagram you
+**3. Describe what the business needs.** Open the folder in any AI coding assistant: Claude Code, Codex, Cursor,
+GitHub Copilot, Gemini CLI or any other. There is nothing to configure. Hand it a Word document, an e-mail or a diagram you
 already have, or tell it the way you would tell a colleague:
 
 > We need an app for **[your process]**. **[Who]** starts it and fills in **[what]**.
