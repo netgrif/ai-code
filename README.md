@@ -10,10 +10,11 @@ modules, or with your own Angular frontend through the
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and an AI coding assistant.** Everything
 else runs in containers: no Java, Node or database to install.
 
-![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)
+[![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)](https://youtu.be/TODO-starter)
 
 <sub>HR's Word document goes to the AI assistant as it is. A few minutes later HR raises a request, the manager approves
-it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.</sub>
+it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.
+[Watch the narrated walkthrough on YouTube](https://youtu.be/TODO-starter)</sub>
 
 ## Get started
 
