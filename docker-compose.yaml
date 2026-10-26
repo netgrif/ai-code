@@ -51,8 +51,9 @@ services:
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:8080/manage/health" ]
       interval: 10s
-      timeout: 30s
-      retries: 10
+      timeout: 10s
+      retries: 15
+      start_period: 180s
     volumes:
       - ./nae/engine/logs:/opt/netgrif/engine/log:Z
       - ./nae/engine/storage:/opt/netgrif/engine/storage:Z
