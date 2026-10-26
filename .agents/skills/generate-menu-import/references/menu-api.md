@@ -5,7 +5,7 @@ Source: `../application-engine` at tag `v7.0.3`. Line numbers point into
 `application-engine/src/main/groovy/com/netgrif/application/engine/petrinet/domain/dataset/logic/action/ActionDelegate.groovy`.
 Body classes live in `nae-object-library`, package
 `com.netgrif.application.engine.objects.workflow.domain.menu`. When the NAE
-image version in `nae/docker-compose.yaml` changes, re-check this file
+image version in `docker-compose.yaml` changes, re-check this file
 against the source.
 
 ## Contents

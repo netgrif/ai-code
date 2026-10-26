@@ -49,7 +49,7 @@ Redeploying while iterating).
 ## Stage 2: Live test (engine-mcp MCP, http://localhost:8080/mcp)
 
 Precondition: Stage 1 has no errors. If the NAE MCP tools are unavailable, say
-so and stop. Do not fake results. Suggest running `docker compose up` in `nae/`.
+so and stop. Do not fake results. Suggest running `docker compose up -d` in the repository root.
 
 1. Read the process (places, transitions, data, actions). Write a scenario:
    ordered tasks, data values to set, expected enabled tasks and data after

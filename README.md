@@ -13,8 +13,7 @@ else runs in containers: no Java, Node or database to install.
 ![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)
 
 <sub>HR's Word document goes to the AI assistant as it is. A few minutes later HR raises a request, the manager approves
-it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.
-[Watch it as a video](docs/media/demo.mp4)</sub>
+it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.</sub>
 
 ## Get started
 
@@ -25,13 +24,13 @@ top of this page and name it after your application, for example `onboarding-app
 
 ```bash
 git clone https://github.com/<your-account>/<your-app>.git
-cd <your-app>/nae
+cd <your-app>
 docker compose up -d
 ```
 
 The first start downloads the images (the engine, the frontend, the databases) and takes a few minutes; later starts
-take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`. The super
-admin is `super@netgrif.com`; its password is set in [`nae/docker-compose.yaml`](nae/docker-compose.yaml)
+take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`. Log in as
+`admin`; its password is set in [`docker-compose.yaml`](docker-compose.yaml)
 (`netgrif.engine.security.auth.admin-password`). Change it there before you share the machine with anyone.
 
 **3. Describe what the business needs.** Open the folder in your AI coding assistant: Claude Code, Codex, Cursor,
@@ -93,10 +92,10 @@ tool.
 
 | Part | What it does | Where |
 |---|---|---|
-| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
-| **Frontend** (`netgrif/application-engine-frontend:7.0.3`) | The portal your users work in, at `localhost:4200` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
-| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`) | Petriflow knowledge and validation for the assistant, at `localhost:3000` | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
-| **MongoDB, Elasticsearch, Redis** | Data, search and cache | [`nae/docker-compose.yaml`](nae/docker-compose.yaml) |
+| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml) |
+| **Frontend** (`netgrif/application-engine-frontend:7.0.3`) | The portal your users work in, at `localhost:4200` | [`docker-compose.yaml`](docker-compose.yaml) |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`) | Petriflow knowledge and validation for the assistant, at `localhost:3000` | [`docker-compose.yaml`](docker-compose.yaml) |
+| **MongoDB, Elasticsearch, Redis** | Data, search and cache | [`docker-compose.yaml`](docker-compose.yaml) |
 | **Rules for the assistant** | How to build, check and test a Netgrif application, and when to ask you | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
 | **Your application** | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example) | [`processes/`](processes/README.md) |
 | **Your modules** (optional) | Java code the engine loads at start | [`modules/`](modules/README.md) |

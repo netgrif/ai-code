@@ -11,10 +11,10 @@ Reply in the language the user writes in.
 
 | Path                       | Purpose                                                                                                           |
 |----------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `nae/docker-compose.yaml`  | Local stack: `nae-worker` (:8080), `nae-frontend` (:4200), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis |
-| `nae/nae-backend/modules/` | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                  |
-| `nae/nae-backend/logs/`    | NAE logs (mounted from the container), including `nae.log`                                                        |
-| `nae/nae-backend/storage/` | NAE storage (mounted from the container)                                                                          |
+| `docker-compose.yaml`      | Local stack: `engine` (:8080), `frontend` (:4200), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis        |
+| `nae/engine/modules/`      | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                  |
+| `nae/engine/logs/`         | NAE logs (mounted from the container), including `nae.log`                                                        |
+| `nae/engine/storage/`      | NAE storage (mounted from the container)                                                                          |
 | `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`                                              |
 | `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                                                          |
 | `.agents/skills/`          | Task playbooks for agents (see below)                                                                             |
@@ -55,7 +55,7 @@ the frontmatter.
   `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow
   versions and Action API.
   Never write Petriflow or Action API syntax from memory.
-- `engine-mcp` works only while `nae-worker` runs on `localhost:8080`.
+- `engine-mcp` works only while `engine` runs on `localhost:8080`.
   If it is not reachable, say so and stop. Do not fake results.
 
 ## Project setup
@@ -64,16 +64,17 @@ Prerequisites: Docker with Compose, and (only when developing modules) Java 21 a
 Maven. **Warn the developer** that developing a module requires Java 21 and Maven installed; if they are missing, say so
 and stop before module work.
 
-1. Start the stack: `cd nae && docker compose up -d`. It starts the engine, the
+1. Start the stack from the repository root: `docker compose up -d`. It starts the engine, the
    frontend, the Petriflow MCP and the databases. The frontend waits for a
    healthy engine.
 2. Wait until NAE is healthy: `curl http://localhost:8080/manage/health` returns
    status `UP` (no authentication needed), or `docker compose ps` shows the
-   services as healthy. If not, read `nae/nae-backend/logs/nae.log`.
-3. Open the frontend at http://localhost:4200 and log in as `super@netgrif.com`
-   (super admin). Its password is generated on the first run and printed in
-   `nae/nae-backend/logs/nae.log`. The frontend is a single-page app: the
-   browser calls the engine on `localhost:8080` directly.
+   services as healthy. If not, read `nae/engine/logs/nae.log`.
+3. Open the frontend at http://localhost:4200 and log in as `admin`. Its
+   password is set in `docker-compose.yaml`
+   (`netgrif.engine.security.auth.admin-password`, a local dev default). The
+   frontend is a single-page app: the browser calls the engine on
+   `localhost:8080` directly.
 4. Deploy the processes from `processes/`: with the `engine-mcp` MCP (`deploy_process`), or in the UI via the "more"
    icon (bottom left) →
    view **Workflow** → **+** → select the XML file → **Upload**.
@@ -86,13 +87,13 @@ approval first: deploying a process, creating a case, executing a task,
 creating or deleting users, assigning roles, copying/removing a module, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
 Docker volumes or data.
 
-**Credentials.** The generated super admin password is a secret. Read it from the
-log only when needed, and never write it into files, commits, reports or chat
-output.
+**Credentials.** The `admin` password is a secret. Read it from
+`docker-compose.yaml` only when needed, and never write it into other files,
+commits, reports or chat output.
 
 **Test users.** Role tests use disposable users that you create (with a
-recognizable name prefix) and their impersonation tokens. Never test with the
-super admin or existing users. Treat tokens like the password: never write them
+recognizable name prefix) and their impersonation tokens. Never test with
+the `admin` user or existing users. Treat tokens like the password: never write them
 into files, commits, reports or chat output. After every test scenario delete
 the test cases and users you created; deployed processes and the menu stay.
 
@@ -113,8 +114,8 @@ the test cases and users you created; deployed processes and the menu stay.
 **Modules.**
 
 - Sources in `modules/<artifactId>/`, built with `nae-module-maven-plugin`,
-  ZIP unzipped into `nae/nae-backend/modules/<artifactId>/`, then restart
-  `nae-worker` (`docker compose restart nae-worker` in `nae/`).
+  ZIP unzipped into `nae/engine/modules/<artifactId>/`, then restart the
+  engine (`docker compose restart engine` in the repository root).
 - Actions call a module as `Module.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
   XML, not the module. Otherwise use standard Java and Spring practice.
 
