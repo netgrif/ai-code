@@ -10,7 +10,7 @@ It holds **built output only**. Module source code belongs in [`../../../modules
 Each module is unzipped into a folder named after its `artifactId`:
 
 ```
-nae-backend/modules/
+nae/engine/modules/
 └── myExampleModule/
     ├── myExampleModule-1.0.0.jar
     └── libs/
@@ -22,9 +22,9 @@ The ZIP is produced by `nae-module-maven-plugin` during `mvn clean package` in t
 ## Deploying a module
 
 1. Build the module and locate the ZIP in its `target/` folder.
-2. Delete the old `nae-backend/modules/<artifactId>/` folder, if there is one.
-3. Unzip the new ZIP into `nae-backend/modules/<artifactId>/`.
-4. Restart the engine from the `nae` folder: `docker compose restart nae`.
-5. Check `docker compose logs nae` for loading errors.
+2. Delete the old `nae/engine/modules/<artifactId>/` folder, if there is one.
+3. Unzip the new ZIP into `nae/engine/modules/<artifactId>/`.
+4. Restart the engine from the repository root: `docker compose restart engine`.
+5. Check `docker compose logs engine` for loading errors.
 
 Jars and ZIPs are ignored by git. Do not commit them.

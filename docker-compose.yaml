@@ -7,7 +7,7 @@ services:
     ports:
       - "3000:3000"
 
-  nae-frontend:
+  frontend:
     image: netgrif/application-engine-frontend:7.0.3
     ports:
       - "4200:80"
@@ -17,12 +17,12 @@ services:
       timeout: 10s
       retries: 10
     depends_on:
-      nae-worker:
+      engine:
         condition: service_healthy
     networks:
       - netgrif-platformnet
 
-  nae-worker:
+  engine:
     image: netgrif/application-engine-with-mcp:7.0.3
     ports:
       - "8080:8080"
@@ -54,9 +54,9 @@ services:
       timeout: 30s
       retries: 10
     volumes:
-      - ./nae-backend/logs:/opt/netgrif/engine/log:Z
-      - ./nae-backend/storage:/opt/netgrif/engine/storage:Z
-      - ./nae-backend/modules:/opt/netgrif/engine/modules/custom:Z
+      - ./nae/engine/logs:/opt/netgrif/engine/log:Z
+      - ./nae/engine/storage:/opt/netgrif/engine/storage:Z
+      - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:Z
     depends_on:
       nae-mongodb:
         condition: service_healthy

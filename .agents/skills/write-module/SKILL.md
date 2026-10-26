@@ -1,7 +1,7 @@
 ---
 name: write-module
 description: Builds, packages and deploys custom NAE modules, Spring Boot code loaded into the Application Engine, whose services Petriflow actions call as Module.group.bean.method. Use when creating, changing, building or deploying a module in modules/, or when a Petriflow action needs Java functionality or a whole service that cannot be a process or action (e.g. OCR, an external system integration). Not for logic that fits in an action (use generate-action).
-compatibility: Requires Java 21, Maven and Docker with Compose; deploying needs the local NAE stack from nae/docker-compose.yaml.
+compatibility: Requires Java 21, Maven and Docker with Compose; deploying needs the local NAE stack from docker-compose.yaml.
 metadata:
   tested: false
   version: 0.3.0
@@ -18,13 +18,13 @@ The module's main class is **not executed** when NAE loads it: only the beans
 found by component scanning are registered. Sources live in
 `modules/<artifactId>/` (one Maven project per module). The build
 (`nae-module-maven-plugin`) produces a ZIP with the module jar and a `libs/`
-directory. The ZIP is unzipped into `nae/nae-backend/modules/<artifactId>/`,
+directory. The ZIP is unzipped into `nae/engine/modules/<artifactId>/`,
 which the compose file mounts into the engine container. A module cannot be
 changed at runtime: every change needs an engine restart.
 Reference: https://platform.netgrif.cloud/ecosystem/modules/custom-module
 
 **Approval rule:** writing sources and running `mvn` need no approval. Removing
-or unzipping into `nae/nae-backend/modules/` and restarting the container change
+or unzipping into `nae/engine/modules/` and restarting the container change
 the local instance and need user approval first.
 
 ## Steps
@@ -38,7 +38,7 @@ the local instance and need user approval first.
    the artifactId. Never put sources under `nae/`.
 2. **Project:** standard Maven layout, Java 21. Add the engine as a dependency
    with `provided` scope (the engine itself must not be packaged), at the
-   version of the engine image in `nae/docker-compose.yaml` (the current
+   version of the engine image in `docker-compose.yaml` (the current
    reference is 7.0.3). Import the Spring Boot BOM matching that engine version.
    Fill in `name`, `description`, `groupId`, `artifactId` and `version`: the
    packaging plugin copies them into the jar manifest.
@@ -85,10 +85,10 @@ the local instance and need user approval first.
    pass. The ZIP is in `modules/<artifactId>/target/`.
 8. **Deploy (approval):** show the user the ZIP path, the directory that will be
    replaced, and the restart command. After approval: delete
-   `nae/nae-backend/modules/<artifactId>/`, unzip the ZIP into it (jar and
+   `nae/engine/modules/<artifactId>/`, unzip the ZIP into it (jar and
    `libs/` directly inside), run
-   `docker compose -f nae/docker-compose.yaml restart nae-worker`, then check
-   `docker compose -f nae/docker-compose.yaml logs nae-worker` for load errors.
+   `docker compose restart engine` (in the repository root), then check
+   `docker compose logs engine` for load errors.
    NAE scans the folder recursively.
 9. **Use in Petriflow:** call from an action as
    `Module.<group>.<serviceBeanName>.<method>(args)`. The bean name is the
@@ -136,7 +136,7 @@ fix `.gitignore`. Never use `git add -f`.
 - Missing `@ModuleService` on the service, so actions cannot see it.
 - Module and engine versions differ from the running engine image.
 - Copying the ZIP without unzipping it.
-- Sources placed in `nae/nae-backend/modules/` (that folder is for built output only).
+- Sources placed in `nae/engine/modules/` (that folder is for built output only).
 - Unzipping over an old version so stale `libs/` jars remain.
 - Restarting the container before unzipping.
 - Compose volume path not matching the real folder name.

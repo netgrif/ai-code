@@ -26,7 +26,7 @@ mvn -f modules/<artifactId>/pom.xml clean package
 ```
 
 The project is packaged with `nae-module-maven-plugin` into a ZIP in `target/`. Unzip it into
-[`../nae/nae-backend/modules/<artifactId>/`](../nae/nae-backend/modules/README.md) and restart the engine, as described
+[`../nae/engine/modules/<artifactId>/`](../nae/engine/modules/README.md) and restart the engine, as described
 there. A module cannot be changed at runtime, so every change needs a restart.
 
 Build output (`target/`, jars, ZIPs) is ignored by git. Do not commit it.

@@ -77,7 +77,7 @@ Template and API reference: `references/menu-api.md`.
 6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` until clean); Stage 2 only with the
    user's approval,
    deploying referenced processes first. Then check the menu at
-   http://localhost:4200 and errors in `nae/nae-backend/logs/nae.log`.
+   http://localhost:4200 and errors in `nae/engine/logs/nae.log`.
 
 ## Quick reference
 
@@ -116,7 +116,7 @@ Result: one validated menu import, the README and a report.
   `application-engine/src/main/groovy/com/netgrif/application/engine/petrinet/domain/dataset/logic/action/ActionDelegate.groovy`
   and package `com.netgrif.application.engine.objects.workflow.domain.menu` in
   `nae-object-library`. Check the version matches the NAE image in
-  `nae/docker-compose.yaml`.
+  `docker-compose.yaml`.
 
 ## Troubleshooting
 
