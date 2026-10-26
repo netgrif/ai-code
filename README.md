@@ -10,11 +10,11 @@ modules, or with your own Angular frontend through the
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and an AI coding assistant.** Everything
 else runs in containers: no Java, Node or database to install.
 
-![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)
+[![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)](https://youtu.be/TODO-starter)
 
 <sub>HR's Word document goes to the AI assistant as it is. A few minutes later HR raises a request, the manager approves
 it and IT ticks off the accounts. A change is one sentence, and the same files go to your server.
-[Watch it as a video](docs/media/demo.mp4)</sub>
+[Watch the narrated walkthrough on YouTube](https://youtu.be/TODO-starter)</sub>
 
 ## Get started
 
@@ -51,7 +51,7 @@ running cases keep theirs. The last prototype is the app.
 
 **5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
 company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
-Production use needs a commercial licence.
+Production use needs a licence: see [Licence and production use](#licence-and-production-use).
 
 ## What it is good for
 
@@ -103,7 +103,14 @@ tool.
 
 More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
-## Licence
+## Licence and production use
 
-**NETGRIF Community License 2.0**: free for development, testing and other non-production use, source-available, not
-open source. Production use needs a commercial licence. See [LICENSE.txt](LICENSE.txt).
+This repository is for **development and testing only**. To run your applications in production in your company,
+you need a licensed version of the Netgrif platform.
+
+- **Buy a licence now:** [contact our sales team](https://netgrif.com/contact-us/), they will be happy to help.
+- **Prefer to buy it yourself?** We are building a customer portal where you will buy Netgrif licences on your own.
+  [Join the waiting list](https://netgrif.com/licence-waiting-list/) and we will let you know when it opens.
+
+The code is under the **NETGRIF Community License 2.0**: source-available, not open source. See
+[LICENSE.txt](LICENSE.txt).
