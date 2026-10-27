@@ -52,7 +52,10 @@ validated.
     - List `processes/*/` and read each application's `README.md`. Note the
       existing process ids, roles and data-centric processes; reuse them
       instead of creating duplicates.
-    - When changing an existing process, note its current `<version>`.
+    - When changing an existing process, note its current `<version>`, and
+      compare `git hash-object` of the file with the `Hash` column of the
+      application `README.md`: a difference means the user edited it in the
+      builder, so read the current file and keep their changes.
     - Write down: roles (actors), data, steps, who can supply each field, how
       many users act at the same time, what users must not see of each other,
       and which data outlives one run. Ask the user for any of these that the
@@ -94,7 +97,9 @@ validated.
    verified by the role scenarios of `test-process`, not by reading the XML.
 10. **Application README.** Create or update `processes/<app_name>/README.md`
     for every application you touched (template below), including the process
-    map: update it whenever a process, channel or reference changes.
+    map: update it whenever a process, channel or reference changes. Write the
+    `Hash` of every process file (first 8 characters of `git hash-object
+    <file>`) once per task, after validation passes.
 11. **Report** (see Output).
 
 Before step 4, when the requirement has more than one actor or more than one
@@ -152,8 +157,11 @@ Application README template (keep it this short):
 
 ## Processes
 
-| Process id | File | Kind | Purpose | Roles |
-|------------|------|------|---------|-------|
+| Process id | File | Kind | Purpose | Roles | Hash |
+|------------|------|------|---------|-------|------|
+
+Hash: the file as the AI assistant last wrote or read it. A mismatch means someone
+edited it since, for example in the builder.
 
 ## Process map
 
@@ -188,6 +196,10 @@ flowchart LR
 
 Kind is `data-centric`, `process-centric` (P6) or `standalone` (a process with
 no links to other cases).
+
+Hash is the first 8 characters of `git hash-object processes/<app_name>/<file>`.
+It tracks the file content only; it is not the process `<version>`. Every process
+file of the application has a row, including `menu_import.xml`.
 
 Process map rules (a Mermaid diagram, rendered by GitHub):
 
@@ -317,7 +329,8 @@ Solution: do not bump the version. Check `list_processes`, then redeploy with
 
 ## Output
 
-Petriflow version used; process versions (new, unchanged, or old → new); the approved architecture (applications, full process
+Petriflow version used; process versions (new, unchanged, or old → new); the approved architecture (applications, full
+process
 ids); files written, including application READMEs; per file the
 `validate_process` result (issues → fixes → clean); actions written;
 Stage 2 result (including replaced processes and the role scenario matrix) or
@@ -345,6 +358,9 @@ deviations with reasons.
 - Forgetting to create or update the application `README.md`.
 - A process map that is missing or out of sync with the Channels and
   Dependencies sections.
+- Editing an existing process file from a stale copy, without the hash check,
+  and so overwriting the user's builder changes.
+- Forgetting to update the `Hash` column after the last write of a task.
 - Bumping the process version during your own iterations, or to get around a
   refused deploy.
 - Not bumping the process version when the user gave a new instruction to edit

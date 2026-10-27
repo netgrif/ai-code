@@ -18,8 +18,8 @@ the XML by eye.
 
 **Approval rule:** any tool call that changes the local NAE (deploy, create
 case, execute task, create or delete users, assign roles, delete cases) needs
-user approval before it runs. Read-only calls
-(`list_versions`, `validate_process`, `list_processes`, `list_tasks_of_case`)
+user approval before it runs. Read-only calls (`list_versions`, `validate_process`, `list_processes`,
+`list_tasks_of_case`)
 don't. For file edits see Stage 1, step 6. `deploy_process` with
 `replaceExisting` also deletes the cases and tasks of the replaced process (see
 Redeploying while iterating).
@@ -70,23 +70,28 @@ so and stop. Do not fake results. Suggest running `docker compose up -d` in the 
    on the same implementation: later replacements of the same processes need no
    new approval. Anything outside it (extra processes, extra tasks, different
    data, a second case, a changed scenario) needs new approval.
-3. After approval: `deploy_process` (see Redeploying while iterating) →
+3. After approval: compare `git hash-object` (first 8 characters) of every file you
+   are about to deploy with the hash you noted when you last read or wrote it,
+   or with the `Hash` column of the application `README.md`. The user may have
+   edited it in the builder. Re-read files that differ and keep the user's
+   changes; do not deploy from a stale copy. Then `deploy_process` (see
+   Redeploying while iterating) →
    `create_case` → loop `list_tasks_of_case` → `execute_task` →
    `list_tasks_of_case`.
    After each step compare the actual enabled tasks and data to the expected
-   ones. When a step fails, keep the exact outputs as evidence and clean up
-   (step 5). Then fix the process, validate it again (Stage 1), redeploy it per
+   ones. When a step fails, keep the exact outputs as evidence and clean up (step 5). Then fix the process, validate it
+   again (Stage 1), redeploy it per
    the table below and run the scenario again from step 3 as a new run.
-4. Several cooperating processes: deploy the processes that others reference
-   (via caseRef, taskRef or case creation) before the processes that reference
+4. Several cooperating processes: deploy the processes that others reference (via caseRef, taskRef or case creation)
+   before the processes that reference
    them, and include the cross-case effects (cases created, channels fired) in
    the expected results. This also applies across applications: take the order
    from the "Deploy order" and "Dependencies on other applications" sections of
    `processes/<app_name>/README.md`, and include referenced processes of other
    applications in the scenario you present for approval. Replace in the same
    order. Replacing a referenced process deletes its cases, so cases of other
-   processes may hold dead caseRefs: redeploy the processes that reference it
-   (with `replaceExisting` if the same version is deployed) and recreate their
+   processes may hold dead caseRefs: redeploy the processes that reference it (with `replaceExisting` if the same
+   version is deployed) and recreate their
    cases in the scenario.
 5. **Clean up after every scenario**, also a failed one, so the user finds a
    clean UI. Delete the test cases you created (`delete_case`), including cases
@@ -105,12 +110,12 @@ deployed and the flag is not `true`. With `true` the engine deletes the
 deployed version **including all its cases and tasks** and imports the provided
 XML.
 
-| Situation                                                                       | `<version>` in the XML                                                                                                                               | `deploy_process`                                      |
-|---------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| Process id not deployed (per `list_processes`)                                  | `1.0.0` for a new process, otherwise unchanged                                                                                                       | plain                                                 |
-| Id and version deployed by you earlier in this task, same implementation        | unchanged                                                                                                                                            | `replaceExisting: true`                               |
-| The user gave a new instruction to edit an implemented process                  | bumped once for that instruction: minor for added or changed behavior, major for removed fields or transitions; ask when unclear                    | plain (a new version, nothing is replaced)            |
-| Id and version deployed, but not by you in this task                            | unchanged                                                                                                                                            | ask the user before using `replaceExisting`           |
+| Situation                                                                | `<version>` in the XML                                                                                                           | `deploy_process`                            |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
+| Process id not deployed (per `list_processes`)                           | `1.0.0` for a new process, otherwise unchanged                                                                                   | plain                                       |
+| Id and version deployed by you earlier in this task, same implementation | unchanged                                                                                                                        | `replaceExisting: true`                     |
+| The user gave a new instruction to edit an implemented process           | bumped once for that instruction: minor for added or changed behavior, major for removed fields or transitions; ask when unclear | plain (a new version, nothing is replaced)  |
+| Id and version deployed, but not by you in this task                     | unchanged                                                                                                                        | ask the user before using `replaceExisting` |
 
 - Never bump the version to get around a failed or refused deploy.
 - Check `list_processes` before every deploy. After a failed deploy do not retry
@@ -120,17 +125,18 @@ XML.
 
 ## Quick reference
 
-| Need                            | Tool                                            | Approval                         |
-|---------------------------------|-------------------------------------------------|----------------------------------|
-| List language versions          | `petriflow://versions` / `list_versions`        | no                               |
-| Check XML                       | `validate_process`                              | no                               |
-| List deployed processes         | `list_processes`                                | no                               |
-| Apply fix to file               | edit                                            | only for existing/user files     |
-| Deploy / create case / run task | `deploy_process`, `create_case`, `execute_task` | yes, once per presented scenario |
-| Redeploy the same version       | `deploy_process` with `replaceExisting: true`   | covered by that approval; deletes the process's cases and tasks |
-| Inspect case tasks              | `list_tasks_of_case`                            | no                               |
-| Test users and roles            | `create_user`, `assign_role`, `get_user`, `get_process`, `whoami` | yes, once per presented scenario; see `references/role-scenarios.md` |
-| Clean up after the scenario     | `delete_case`, `delete_user`                    | covered by that approval; only what the scenario created |
+| Need                             | Tool                                                              | Approval                                                             |
+|----------------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------|
+| List language versions           | `petriflow://versions` / `list_versions`                          | no                                                                   |
+| Check XML                        | `validate_process`                                                | no                                                                   |
+| List deployed processes          | `list_processes`                                                  | no                                                                   |
+| Detect edits made in the builder | `git hash-object <file>`                                          | no                                                                   |
+| Apply fix to file                | edit                                                              | only for existing/user files                                         |
+| Deploy / create case / run task  | `deploy_process`, `create_case`, `execute_task`                   | yes, once per presented scenario                                     |
+| Redeploy the same version        | `deploy_process` with `replaceExisting: true`                     | covered by that approval; deletes the process's cases and tasks      |
+| Inspect case tasks               | `list_tasks_of_case`                                              | no                                                                   |
+| Test users and roles             | `create_user`, `assign_role`, `get_user`, `get_process`, `whoami` | yes, once per presented scenario; see `references/role-scenarios.md` |
+| Clean up after the scenario      | `delete_case`, `delete_user`                                      | covered by that approval; only what the scenario created             |
 
 ## Report
 
@@ -160,6 +166,8 @@ verdict); the cleanup result; suggested process changes for any mismatch.
 - Retrying a failed deploy with `replaceExisting: true` without checking
   `list_processes`.
 - Mixing up the Petriflow version and the process `<version>`.
+- Deploying or replacing a process from a copy that the user has edited in the
+  builder since you read it.
 - Running a role-protected process only token-less (as system) and calling the
   permissions fine.
 - Drawing a permission conclusion from a call without an impersonation token.

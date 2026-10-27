@@ -9,16 +9,17 @@ Reply in the language the user writes in.
 
 ## Repository layout
 
-| Path                       | Purpose                                                                                                           |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `docker-compose.yaml`      | Local stack: `engine` (:8080), `frontend` (:4200), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis        |
-| `nae/engine/modules/`      | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                  |
-| `nae/engine/logs/`         | NAE logs (mounted from the container), including `nae.log`                                                        |
-| `nae/engine/storage/`      | NAE storage (mounted from the container)                                                                          |
-| `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`                                              |
-| `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                                                          |
-| `.agents/skills/`          | Task playbooks for agents (see below)                                                                             |
-| `.mcp.json`                | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE)                                  |
+| Path                    | Purpose                                                                                                                      |
+|-------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `docker-compose.yaml`   | Local stack: `engine` (:8080), `frontend` (:4200), `builder` (:4300), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis |
+| `nae/engine/modules/`   | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                             |
+| `nae/engine/logs/`      | NAE logs (mounted from the container), including `nae.log`                                                                   |
+| `nae/engine/storage/`   | NAE storage (mounted from the container)                                                                                     |
+| `processes/<app_name>/` | One folder per application: Petriflow process XMLs and a `README.md`. Shared live with the builder (read-write)              |
+| `modules/<artifactId>/` | Java/Spring module sources, one Maven project per module                                                                     |
+| `.agents/skills/`       | Task playbooks for agents (see below)                                                                                        |
+| `.mcp.json`             | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE)                                             |
+| `.env.example`          | Optional settings (`PUID`, `PGID` for the builder); a real `.env` is git-ignored                                             |
 
 ## How to implement a requirement
 
@@ -64,9 +65,10 @@ Prerequisites: Docker with Compose, and (only when developing modules) Java 21 a
 Maven. **Warn the developer** that developing a module requires Java 21 and Maven installed; if they are missing, say so
 and stop before module work.
 
-1. Start the stack from the repository root: `docker compose up -d`. It starts the engine, the
-   frontend, the Petriflow MCP and the databases. The frontend waits for a
-   healthy engine.
+1. Start the stack from the repository root: `docker compose up -d` (Docker Compose v2). It starts
+   the engine, the frontend, the builder, the Petriflow MCP and the databases. A short
+   `init-perms` job fixes the owner of `nae/engine/logs` and `storage` first. The frontend
+   waits for a healthy engine.
 2. Wait until NAE is healthy: `curl http://localhost:8080/manage/health` returns
    status `UP` (no authentication needed), or `docker compose ps` shows the
    services as healthy. If not, read `nae/engine/logs/nae.log`.
@@ -74,7 +76,8 @@ and stop before module work.
    password is set in `docker-compose.yaml`
    (`netgrif.engine.security.auth.admin-password`, a local dev default). The
    frontend is a single-page app: the browser calls the engine on
-   `localhost:8080` directly.
+   `localhost:8080` directly. The builder, a visual editor of the files in `processes/`,
+   is at http://localhost:4300.
 4. Deploy the processes from `processes/`: with the `engine-mcp` MCP (`deploy_process`), or in the UI via the "more"
    icon (bottom left) →
    view **Workflow** → **+** → select the XML file → **Upload**.
@@ -84,7 +87,8 @@ and stop before module work.
 
 **Approval.** Anything that changes the local NAE or the machine needs user
 approval first: deploying a process, creating a case, executing a task,
-creating or deleting users, assigning roles, copying/removing a module, restarting or recreating containers. Read-only calls (validate, list) don't. Never delete
+creating or deleting users, assigning roles, copying/removing a module, restarting or recreating containers. Read-only
+calls (validate, list) don't. Never delete
 Docker volumes or data.
 
 **Credentials.** The `admin` password is a secret. Read it from
@@ -106,10 +110,19 @@ the test cases and users you created; deployed processes and the menu stay.
   `<app_name>/<process_name>` (e.g. `hello_world/hello_world`), unique across
   the whole NAE deployment. The file is `processes/<app_name>/<process_name>.xml`.
 - Use the latest Petriflow version from the Petriflow MCP unless pinned.
+- The user can edit the same files in the builder. Before you edit or deploy a
+  process file, compare `git hash-object <file>` (first 8 characters) with the
+  value you noted when you last read or wrote it in this session, or with the
+  `Hash` column of the application `README.md` if you did not read it this
+  session. Re-read only files that differ, keep the user's changes and never
+  revert them. After your last write of a task, put the new hashes in the README.
 - Every process change must pass `validate_process`. Do not hand-wave around errors.
 - Actions are short, use Action API methods, one concern each. Never use Grape,
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
   function. Whole services become modules.
+
+**NAE data folders.** `nae/engine/logs` and `nae/engine/storage` belong to the
+engine container (owned by its user). Read logs from there, never write there.
 
 **Modules.**
 

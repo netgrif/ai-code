@@ -982,3 +982,4 @@ cython_debug/
 #.idea/
 
 nae/engine/storage
+nae/engine/logs

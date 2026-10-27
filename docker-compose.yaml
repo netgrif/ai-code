@@ -7,6 +7,24 @@ services:
     ports:
       - "3000:3000"
 
+  builder:
+    image: netgrif/application-builder:2.1.1-rc.3
+    ports:
+      - "127.0.0.1:4300:80"
+    environment:
+      PROCESS_FILES_ENABLED: "true"
+      PUID: "${PUID:-}"
+      PGID: "${PGID:-}"
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:80/" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ./processes:/data/processes:z
+    networks:
+      - netgrif-platformnet
+
   frontend:
     image: netgrif/application-engine-frontend:7.0.3
     ports:
@@ -19,6 +37,18 @@ services:
     depends_on:
       engine:
         condition: service_healthy
+    networks:
+      - netgrif-platformnet
+
+  init-perms:
+    # The engine image runs as uid 10001 and cannot write to folders created by Docker or by you.
+    image: busybox:1.37
+    user: "0:0"
+    command: [ "sh", "-c", "chown -R 10001:10001 /logs /storage || echo 'chown failed, continuing'" ]
+    volumes:
+      - ./nae/engine/logs:/logs:z
+      - ./nae/engine/storage:/storage:z
+    restart: "no"
     networks:
       - netgrif-platformnet
 
@@ -55,10 +85,12 @@ services:
       retries: 15
       start_period: 180s
     volumes:
-      - ./nae/engine/logs:/opt/netgrif/engine/log:Z
-      - ./nae/engine/storage:/opt/netgrif/engine/storage:Z
-      - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:Z
+      - ./nae/engine/logs:/opt/netgrif/engine/log:z
+      - ./nae/engine/storage:/opt/netgrif/engine/storage:z
+      - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:ro,z
     depends_on:
+      init-perms:
+        condition: service_completed_successfully
       nae-mongodb:
         condition: service_healthy
       nae-elasticsearch:

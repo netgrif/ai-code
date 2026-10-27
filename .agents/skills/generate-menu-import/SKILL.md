@@ -73,7 +73,8 @@ Template and API reference: `references/menu-api.md`.
 5. **Application README.** Add the menu import to
    `processes/<app_name>/README.md` (template in `generate-process`) and put
    it last under "Deploy order". Add it to the process map as a node with a
-   `-.->` arrow labelled `menu` to each process it exposes.
+   `-.->` arrow labelled `menu` to each process it exposes. Give it a row in the
+   Processes table with its `Hash` (rule in `generate-process`).
 6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` until clean); Stage 2 only with the
    user's approval,
    deploying referenced processes first. Then check the menu at
@@ -84,7 +85,7 @@ Template and API reference: `references/menu-api.md`.
 | Need                           | How                                                                                                             | Note                                                                                                                                                        |
 |--------------------------------|-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Folder                         | Item with path `/` and identifier `x`; children use path `/x`                                                   | A missing folder is created automatically, named after its path segment (`x`) with icon `folder`, no translations and no roles. Create it explicitly first. |
-| Frontend custom view           | `setUseCustomView(true)`, `setCustomViewSelector("...")`                                                        | Selector of a view built into the frontend container (e.g. `all-cases`, `my-tasks`); it is not created by the menu item.                                                                                         |
+| Frontend custom view           | `setUseCustomView(true)`, `setCustomViewSelector("...")`                                                        | Selector of a view built into the frontend container (e.g. `all-cases`, `my-tasks`); it is not created by the menu item.                                    |
 | Cases of a process             | `createDefaultViewBody(body, query, allowedNets, headers)`, `body.setView(view)`                                | Case list chained to a task list.                                                                                                                           |
 | Open one task of a case        | `createSingleTaskViewBody(body, query, transitionId, allowedNets, headers)`                                     | Transition id must exist in the target process.                                                                                                             |
 | Create button in the case list | `view.setShowCreateCaseButton(true)`, `setCreateCaseButtonTitle(i18n(...))`, `setRequireTitleInCreation(false)` | Helpers turn it off by default.                                                                                                                             |

@@ -30,12 +30,14 @@ docker compose up -d
 ```
 
 The first start downloads the images (the engine, the frontend, the databases) and takes a few minutes; later starts
-take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`. Log in as
+take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`.
+Log in as
 `admin`; its password is set in [`docker-compose.yaml`](docker-compose.yaml)
 (`netgrif.engine.security.auth.admin-password`). Change it there before you share the machine with anyone.
 
 **3. Describe what the business needs.** Open the folder in any AI coding assistant: Claude Code, Codex, Cursor,
-GitHub Copilot, Gemini CLI or any other. There is nothing to configure. Hand it a Word document, an e-mail or a diagram you
+GitHub Copilot, Gemini CLI or any other. There is nothing to configure. Hand it a Word document, an e-mail or a diagram
+you
 already have, or tell it the way you would tell a colleague:
 
 > We need an app for **[your process]**. **[Who]** starts it and fills in **[what]**.
@@ -47,7 +49,9 @@ The assistant writes the application into `processes/<app_name>/`, validates it,
 after your yes. Then it tells you where to sign in.
 
 **4. Use it, update it if needed.** Work in the app and ask for changes in plain words. Each change is a new version;
-running cases keep theirs. The last prototype is the app.
+running cases keep theirs. The last prototype is the app. You can also open and edit the processes visually in the
+**builder** at **http://localhost:4300**. It edits the same files in `processes/`, so reload it after the assistant has
+changed a process, and do not edit one process in both places at once.
 
 **5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
 company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
@@ -91,22 +95,37 @@ tool.
 
 ## What it is made of
 
-| Part | What it does | Where |
-|---|---|---|
-| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml) |
-| **Frontend** (`netgrif/application-engine-frontend:7.0.3`) | The portal your users work in, at `localhost:4200` | [`docker-compose.yaml`](docker-compose.yaml) |
-| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`) | Petriflow knowledge and validation for the assistant, at `localhost:3000` | [`docker-compose.yaml`](docker-compose.yaml) |
-| **MongoDB, Elasticsearch, Redis** | Data, search and cache | [`docker-compose.yaml`](docker-compose.yaml) |
-| **Rules for the assistant** | How to build, check and test a Netgrif application, and when to ask you | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
-| **Your application** | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example) | [`processes/`](processes/README.md) |
-| **Your modules** (optional) | Java code the engine loads at start | [`modules/`](modules/README.md) |
+| Part                                                                 | What it does                                                                                                              | Where                                                                                    |
+|----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Frontend** (`netgrif/application-engine-frontend:7.0.3`)           | The portal your users work in, at `localhost:4200`                                                                        | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Builder** (`netgrif/application-builder:2.1.1-rc.3`)               | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **MongoDB, Elasticsearch, Redis**                                    | Data, search and cache                                                                                                    | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Rules for the assistant**                                          | How to build, check and test a Netgrif application, and when to ask you                                                   | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
+| **Your application**                                                 | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example)                       | [`processes/`](processes/README.md)                                                      |
+| **Your modules** (optional)                                          | Java code the engine loads at start                                                                                       | [`modules/`](modules/README.md)                                                          |
 
 More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
+### Folders and permissions
+
+The stack needs Docker Compose v2 (`docker compose`, not `docker-compose`). The folders it shares with your machine:
+
+- `processes/`: read and written by the builder. It must be owned by you, not by root.
+- `nae/engine/logs/` and `nae/engine/storage/`: written by the engine, which runs as its own user. A short job
+  (`init-perms`) sets the owner when the stack starts. You can read the files, but deleting them needs elevated
+  rights: `sudo rm -rf nae/engine/logs/* nae/engine/storage/*` with Docker, or
+  `podman unshare rm -rf nae/engine/logs/* nae/engine/storage/*` with rootless Podman.
+- `nae/engine/modules/`: modules you build, read by the engine.
+
+On Docker Desktop (Mac, Windows) the builder may report that it cannot write to `processes/`. Then copy
+[`.env.example`](.env.example) to `.env` and set `PUID` and `PGID`.
+
 ## Licence and production use
 
-This repository is under the **NETGRIF Community License 2.0**: source-available, not open source, for
-**development and testing only**. See [LICENSE.txt](LICENSE.txt).
+This repository is under the **NETGRIF Community License 2.0**: source-available, not open source, for **development and
+testing only**. See [LICENSE.txt](LICENSE.txt).
 
 To run your applications in production in your company, you need a **commercial licence** for the Netgrif platform.
 
