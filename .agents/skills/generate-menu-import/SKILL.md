@@ -152,7 +152,9 @@ Solution: tell the user and stop. Do not write the action from memory.
 
 The file written and its process id; the menu as a tree (path, identifier,
 name, view type, roles); the API methods used; the README change; the
-`validate_process` result; the Stage 2 result or why it did not run.
+`validate_process` result; the Stage 2 result or why it did not run; then the
+"Try it now" block from "Hand-off to the user" in `AGENTS.md`, naming the menu
+items that were created.
 
 ## Common mistakes
 

@@ -100,7 +100,9 @@ validated.
     map: update it whenever a process, channel or reference changes. Write the
     `Hash` of every process file (first 8 characters of `git hash-object
     <file>`) once per task, after validation passes.
-11. **Report** (see Output).
+11. **Report and hand-off** (see Output). End the last message with the "Try it
+    now" block from "Hand-off to the user" in `AGENTS.md`: how to open the app,
+    sign in as `admin`, try this application and ask for changes.
 
 Before step 4, when the requirement has more than one actor or more than one
 entity, read `references/modeling-principles.md`. It contains:
@@ -335,7 +337,7 @@ ids); files written, including application READMEs; per file the
 `validate_process` result (issues → fixes → clean); actions written;
 Stage 2 result (including replaced processes and the role scenario matrix) or
 why it did not run; principle
-deviations with reasons.
+deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
 
 ## Common mistakes
 
@@ -361,6 +363,8 @@ deviations with reasons.
 - Editing an existing process file from a stale copy, without the hash check,
   and so overwriting the user's builder changes.
 - Forgetting to update the `Hash` column after the last write of a task.
+- Ending with a technical report only, so the user does not know how to open
+  and try the app.
 - Bumping the process version during your own iterations, or to get around a
   refused deploy.
 - Not bumping the process version when the user gave a new instruction to edit

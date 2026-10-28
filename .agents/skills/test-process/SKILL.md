@@ -144,7 +144,9 @@ End with: Petriflow version used; validation issues → fixes → final state;
 deployed process ids and versions (new or replaced, and the cases a
 replacement deleted); case id; per-step table (task, input, expected, actual,
 pass/fail); for role scenarios the matrix (user × action → expected, observed,
-verdict); the cleanup result; suggested process changes for any mismatch.
+verdict); the cleanup result; suggested process changes for any mismatch. If the
+process stays deployed, finish with the "Try it now" block from "Hand-off to the
+user" in `AGENTS.md`.
 
 ## Common mistakes
 

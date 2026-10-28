@@ -93,7 +93,8 @@ Docker volumes or data.
 
 **Credentials.** The `admin` password is a secret. Read it from
 `docker-compose.yaml` only when needed, and never write it into other files,
-commits, reports or chat output.
+commits or reports. The one exception is the hand-off message to the user (see
+"Hand-off to the user"), where you give it as the login.
 
 **Test users.** Role tests use disposable users that you create (with a
 recognizable name prefix) and their impersonation tokens. Never test with
@@ -138,6 +139,33 @@ engine container (owned by its user). Read logs from there, never write there.
   secrets. `.gitignore` already covers them; never use `git add -f`.
 - Do not change image versions in `docker-compose.yaml` without asking. The
   engine and frontend images are released together, so they stay on one version.
+
+## Hand-off to the user
+
+When you finish building or changing processes (or the menu), end your last
+message with a **Try it now** block. Write it in the user's language, in plain
+words. The user may not be technical: no ports, logs or commands except the one
+named below.
+
+1. **Open the app:** open http://localhost:4200 in your browser.
+2. **Sign in:** user `admin`, password = the value of
+   `netgrif.engine.security.auth.admin-password` in `docker-compose.yaml`, which
+   you read and write out. `admin` has every role, so you can do every step, but
+   you will not see role restrictions this way. This is the only message where
+   you may write the password.
+3. **Try it:** steps for this application with real names: which menu item to
+   open, how to start a new case, which task is first and what to fill in, and
+   what should happen. Describe only steps you checked in the process or in your
+   live test.
+4. **Change it:** tell me what to change, in plain words, or open the builder at
+   http://localhost:4300 to see and edit the processes visually. Reload the
+   builder after I change a process, and do not edit the same process in both
+   places.
+
+If the processes are not deployed, do not write step 3 as if they were. Say they
+are not deployed yet and why. Offer: "ask me to deploy them", or "upload the
+file in the **Workflow** view". If the app is not running, the one step is: start
+Docker, then run `docker compose up -d` in the project folder.
 
 ## Testing and definition of done
 
