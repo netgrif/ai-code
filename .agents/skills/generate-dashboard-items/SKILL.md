@@ -65,6 +65,11 @@ Template and API reference: `references/dashboard-api.md`.
 - A tile needs the `stringId` of its menu item, so the menu item must exist
   before the tile: create it earlier in the same action or deploy the menu
   import first. Never hard-code a case id.
+- `find*` reads Elasticsearch, which lags about a second behind a create. Look up
+  a menu item or tile that must exist with the `awaitCase` helper of the
+  template (5 attempts, 2 s apart, then fail with an exception), and after
+  `createDashboardItem` wait until the tile is findable. Do not retry before a
+  create: it only delays the first deploy.
 - Identifiers (snake_case) are unique across the whole deployment.
 - Do not wrap calls in empty `try/catch`. A broken tile must fail the upload
   visibly, not disappear from the dashboard.
@@ -158,6 +163,12 @@ item from `createDashboardItem`; or `updateDashboardItem` was called and left
 the item with an assigned task.
 Solution: remove the ghost or the stuck case, never call `updateDashboardItem`.
 
+**Upload fails with `menu item ... not found after 5 attempts`.**
+Cause: the menu item does not exist, or it was created seconds ago and is not
+indexed yet.
+Solution: deploy the menu import first and wait a few seconds; raise the
+attempts in `awaitCase` only if the menu import is large.
+
 **Tiles or toolbar parts disappear after adding one tile.**
 Cause: `updateDashboardManagement` was called with only the new tile, or without
 the toolbar flags.
@@ -190,6 +201,7 @@ change; the `validate_process` result; the Stage 2 result or why it did not run.
 - `updateDashboardManagement` with only the new tile, dropping the others and the toolbar flags.
 - `setIsActive` / `setIsInternal` instead of `setActive` / `setInternal`.
 - A tile created before its menu item exists, or a hard-coded menu item case id.
+- A `find*` right after a create without `awaitCase`: Elasticsearch has not indexed the case yet.
 - Deploying the dashboard import before the menu import.
 - No placeholder transition: the schema rejects a document without one.
 - `defaultRole` or `anonymousRole` left `true`, so users can create cases of the import.

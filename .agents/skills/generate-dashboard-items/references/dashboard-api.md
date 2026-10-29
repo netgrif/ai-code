@@ -42,8 +42,19 @@ Replace `hello_world`, the identifiers, names and icons with real ones.
             <actions phase="post">
                 <action id="action1">
                     <![CDATA[
+                    // find reads Elasticsearch, which lags behind a create by about a second:
+                    // retry a lookup of something that must exist, then fail visibly
+                    def awaitCase = { Closure find, String what ->
+                        for (int attempt = 0; attempt < 5; attempt++) {
+                            def found = find()
+                            if (found != null) return found
+                            Thread.sleep(2000)
+                        }
+                        throw new IllegalStateException("${what} not found after 5 attempts".toString())
+                    }
+
                     // Tile that opens the menu item hello_world_cases
-                    def menuItem = findMenuItem("hello_world_cases")
+                    def menuItem = awaitCase({ findMenuItem("hello_world_cases") }, "menu item hello_world_cases")
 
                     def tile = new com.netgrif.application.engine.objects.workflow.domain.menu.dashboard.DashboardItemBody(
                             "hello_world_tile", menuItem.stringId, "emoji_people", i18n("Hello cases", ["sk": "Hello prípady", "en": "Hello cases"]), true)
@@ -52,6 +63,9 @@ Replace `hello_world`, the identifiers, names and icons with real ones.
 
                     // get-or-create: a re-deploy returns the existing item unchanged
                     def tileCase = createDashboardItem(tile)
+                    // wait until the tile is searchable, so a re-deploy right after this one finds it
+                    // instead of creating a duplicate
+                    awaitCase({ findDashboardItem("hello_world_tile") }, "dashboard item hello_world_tile")
 
                     // Dashboard: create when missing, then merge the tile into the existing ones
                     def dashboardCase = findDashboardManagement("main_dashboard")
@@ -211,6 +225,13 @@ Stage 2 and update this section.
   `is_internal_set` / `external_icon_set` clear `item_icon`; `inherit_name`
   does the same to `item_name`. With the stock engine a tile shows the icon and
   name of its menu item: set them on the `MenuItemBody`.
+- `find*` methods search Elasticsearch, which indexes a new case about a second
+  after the create. A lookup right after a create can return null, and
+  `createDashboardItem` then creates a second item with the same id (seen when
+  two deploys ran about a second apart, which left an orphan inactive case).
+  The template therefore retries lookups with `awaitCase` (5 attempts, 2 s
+  apart, then an exception) and waits for the new tile to be searchable before the
+  action ends.
 - Set `setActive(false)` also on create: `configuration_finish` sets it to true
   itself. With `setActive(true)` the finish check can find the new item itself
   (seen once as `already exists` on the first create).
