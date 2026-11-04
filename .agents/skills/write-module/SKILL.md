@@ -1,6 +1,6 @@
 ---
 name: write-module
-description: Builds, packages and deploys custom NAE modules, Spring Boot code loaded into the Application Engine, whose services Petriflow actions call as Module.group.bean.method. Use when creating, changing, building or deploying a module in modules/, or when a Petriflow action needs Java functionality or a whole service that cannot be a process or action (e.g. OCR, an external system integration). Not for logic that fits in an action (use generate-action).
+description: Builds, packages and deploys custom NAE modules, Spring Boot code loaded into the Application Engine, whose services Petriflow actions call as NaeModule.group.bean.method. Use when creating, changing, building or deploying a module in modules/, or when a Petriflow action needs Java functionality or a whole service that cannot be a process or action (e.g. OCR, an external system integration). Not for logic that fits in an action (use generate-action).
 compatibility: Requires Java 21, Maven and Docker with Compose; deploying needs the local NAE stack from docker-compose.yaml.
 metadata:
   tested: false
@@ -91,7 +91,7 @@ the local instance and need user approval first.
    `docker compose logs engine` for load errors.
    NAE scans the folder recursively.
 9. **Use in Petriflow:** call from an action as
-   `Module.<group>.<serviceBeanName>.<method>(args)`. The bean name is the
+   `NaeModule.<group>.<serviceBeanName>.<method>(args)`. The bean name is the
    default Spring name of the service class (class name with a lowercase first
    letter). Verify end-to-end with the `test-process` skill. `petriflow-mcp`
    validates the process XML that calls the module, not the module itself.
@@ -118,7 +118,7 @@ public class ExampleService {
 
 ```groovy
 // println only to show the call; in a real action use the result (e.g. in a `change` call)
-println Module.example.exampleService.getHelloWorld()
+println NaeModule.example.exampleService.getHelloWorld()
 ```
 
 ## Git hygiene

@@ -53,7 +53,7 @@ Always generate an action in the context of its target process XML.
       invent the syntax).
     - Logic that is a whole service (e.g. OCR of a document) is a module: use the
       `write-module` skill, then call it from the action as
-      `Module.<group>.<serviceBeanName>.<method>(args)`.
+      `NaeModule.<group>.<serviceBeanName>.<method>(args)`.
 6. **Insert:** put the code in CDATA with a unique `id` (`actionN`, as in the
    process). If the user asked only for code, return the XML snippet and its
    location instead of editing the file.

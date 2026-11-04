@@ -196,3 +196,12 @@ sees the result. The tutor team changes every semester.
 - [ ] C1–C5 hold; every action navigates at most one caseRef.
 - [ ] Variable arc weights match the number of cases that send (Prop. 1); a skip path exists.
 - [ ] Shared forms defined once and embedded via taskRef (P5).
+- [ ] `immediate="true"` only on fields users search by, show as list columns,
+      or that actions and menu filters query; each with a reason; none on
+      technical, long, file or reference fields (see Indexed fields in
+      `SKILL.md`). Data-centric classes usually index only the fields that
+      identify an entity (name, code) and its state.
+- [ ] Roles used by several processes or applications, or by the menu, are
+      global (`global="true"` in every process using them, identical
+      declaration); roles meaningful only inside one process stay local; no
+      near duplicates of existing global roles (see Global roles in `SKILL.md`).

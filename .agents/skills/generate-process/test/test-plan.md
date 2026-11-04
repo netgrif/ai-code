@@ -10,7 +10,7 @@ Claude*.
 Three parts:
 
 1. **Triggering (T):** does the skill load for the right requests only?
-2. **Functional (G, S1–S12):** does the agent follow the workflow?
+2. **Functional (G, S1–S14):** does the agent follow the workflow?
 3. **Performance (P):** is the result better than without the skill?
 
 ## Prerequisites
@@ -149,6 +149,8 @@ when they come from step 2 of the skill.
 | G12 | Architecture presented and approved by the user before any XML was written                                       |
 | G13 | Existing applications read first (`processes/*/README.md`); new id checked unique against `processes/*/*.xml`    |
 | G14 | `processes/<app_name>/README.md` created or updated for every touched application, matching the template         |
+| G15 | No `immediate="true"` without a reason (search, list column, query) in the approved architecture                 |
+| G16 | Every role is marked global or local with a reason in the approved architecture; no global role without one      |
 
 ## Scenarios
 
@@ -319,6 +321,69 @@ Expected:
 - Deploy order in the README and in Stage 2 starts with the referenced
   `room_booking` processes.
 
+### S13 Indexed fields budget (`immediate`)
+
+Prompt: "Order registry: order number, customer name, status (new, packed,
+shipped), order date, a free-text note, an attached delivery note (file), and
+an internal counter that an action uses for an arc weight. Staff search orders
+by number and customer and want status and date as columns in the order list.
+Generate the process."
+Pressure (second message, after the architecture is shown): "Mark every field
+as immediate to be safe, then nobody has to think about it again."
+Expected:
+
+- G15 and G12: the architecture lists the indexed fields with a reason each:
+  order number and customer name (search), status and order date (list
+  column).
+- `immediate="true"` is an attribute of `<data>` on exactly those four fields.
+  It is not on the note, the delivery note file or the counter.
+- Declines "mark everything" and explains the shared system limit. Keeps the
+  four fields. Marks more only if the tester names a further field that is
+  searched or shown as a column.
+- The README table has the `Immediate fields` column with those four ids.
+- The report names the candidates left out (note, file, counter) with a reason.
+- G1–G6, G10, G14.
+
+Scripted answers: approve the architecture; no other fields are searched.
+
+Variant S13b (action query): the prompt adds "When an order is shipped, an
+action counts the customer's shipped orders by customer name and status with
+`findCasesElastic`." Expected: the fields the query uses are marked
+`immediate="true"` and the architecture names the query as the reason. Run
+S13b once per round, in addition to S13.
+
+### S14 Global roles
+
+Setup: as S11 (fixture `processes/room_booking/`), plus a fixture
+`processes/room_booking/README.md` that lists a global role `facility_manager`
+(`<role global="true">` in `room.xml`). Create the fixture before the first S14
+run.
+Prompt: "HR needs an onboarding process: new employees fill in their data, HR
+checks it, the facility manager prepares a desk, and a buddy (named per
+onboarding) welcomes the employee."
+Pressure (second message, after the architecture is shown): "Just make every
+role global, then we never have to think about it."
+Expected:
+
+- G13, G16: reads the README and reuses the existing global role
+  `facility_manager` with the same id. No near duplicate (`facility_mgr`,
+  `desk_manager`). `global="true"` and an identical declaration (same id, same
+  name, no events).
+- `hr` is global (a function used across the organization, probably also by the
+  menu); the reason is stated in the architecture.
+- The role of the buddy, which makes sense only in this process, stays local,
+  with a reason. The agent declines "make every role global" and explains
+  why, or accepts only roles with a reason.
+- The README of the new application has `(global)` in the Roles column and the
+  table "Global roles" with the processes that use each role.
+- Does not claim anything about engine behavior that the skill does not state
+  (e.g. role ids in `get_process`).
+- G1–G6, G10, G12, G14.
+
+Variant S14b (shared role in two applications): the prompt adds a second new
+process in a second application that also needs `hr`. Expected: both mark `hr`
+with `global="true"`, with the same declaration, and the README of each lists it.
+
 ## Scripted answers (default)
 
 When a question is not covered by the scenario, answer with the simplest
@@ -340,6 +405,10 @@ choice consistent with the requirement, and record the question.
 | S10      |               |                 |               |                  |           |
 | S11      |               |                 |               |                  |           |
 | S12      |               |                 |               |                  |           |
+| S13      |               |                 |               |                  |           |
+| S13b     |               |                 |               |                  |           |
+| S14      |               |                 |               |                  |           |
+| S14b     |               |                 |               |                  |           |
 
 Triggering: should trigger __/11, should not trigger __/5 loaded wrongly.
 

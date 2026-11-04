@@ -130,7 +130,7 @@ engine container (owned by its user). Read logs from there, never write there.
 - Sources in `modules/<artifactId>/`, built with `nae-module-maven-plugin`,
   ZIP unzipped into `nae/engine/modules/<artifactId>/`, then restart the
   engine (`docker compose restart engine` in the repository root).
-- Actions call a module as `Module.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
+- Actions call a module as `NaeModule.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
   XML, not the module. Otherwise use standard Java and Spring practice.
 
 **Git.**

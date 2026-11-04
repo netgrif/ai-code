@@ -5,7 +5,7 @@ compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp)
 metadata:
   tested: false
   mcp-server: petriflow-mcp
-  version: 0.3.0
+  version: 0.5.0
 ---
 
 # Generate Petriflow Process
@@ -50,23 +50,28 @@ validated.
       caseRef, taskRef, user lists).
 3. **Read the existing applications, then analyse the requirement.**
     - List `processes/*/` and read each application's `README.md`. Note the
-      existing process ids, roles and data-centric processes; reuse them
-      instead of creating duplicates.
+      existing process ids, roles (especially the global ones, see Global
+      roles) and data-centric processes; reuse them instead of creating
+      duplicates.
     - When changing an existing process, note its current `<version>`, and
       compare `git hash-object` of the file with the `Hash` column of the
       application `README.md`: a difference means the user edited it in the
       builder, so read the current file and keep their changes.
     - Write down: roles (actors), data, steps, who can supply each field, how
       many users act at the same time, what users must not see of each other,
-      and which data outlives one run. Ask the user for any of these that the
-      requirement does not state.
+      which data outlives one run, and which fields users search by or want
+      as columns of a case list (see Indexed fields). Ask the user for any of
+      these that the requirement does not state.
 4. **Make every transition atomic.** A transition is either one user filling
    one form, or a system transition with no user (P8). Split steps until this
    holds. The result is the *flat model*.
 5. **Decide the architecture** with the tables below. Then present it to the
-   user: each process (full id, application, kind, purpose), its roles,
+   user: each process (full id, application, kind, purpose), its roles (each
+   marked global or local with one reason, see Global roles),
    channels (sender transition → receiver system transition), caseRef/taskRef
-   links, dependencies on processes of other applications, and file paths
+   links, dependencies on processes of other applications, the indexed
+   fields (`immediate="true"`) of each process with one reason each (search,
+   case list column, or Elasticsearch query), and file paths
    `processes/<app_name>/<process_name>.xml`. **Write no XML until the user approves the architecture.** A single
    process
    still goes through this gate (one short line is enough). State the process
@@ -75,8 +80,11 @@ validated.
 6. **Write the XML**, data-centric processes first, then the processes that
    reference them. Follow the schema and the naming rules below. Per process:
    places, transitions, arcs, roles and permissions, data, forms (data groups,
-   laid out as in Form layout), event stubs. Channels and taskRef embedding:
-   see Quick reference. Set`<version>` by the rule in Critical rules.
+   laid out as in Form layout), event stubs. Set `immediate="true"` on exactly
+   the fields approved in step 5 (see Indexed fields) and `global="true"` on
+   exactly the roles approved there (see Global roles). Channels and taskRef
+   embedding: see Quick reference. Set `<version>` by the rule in Critical
+   rules.
 7. **Actions.** Before the first action, ask the user once per session:
    "Should the actions be written by a subagent, or inline here?" Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
@@ -92,8 +100,9 @@ validated.
       process has role permissions or user bindings, Stage 2 includes role
       scenarios with impersonated test users. Every scenario cleans up its test
       cases and users; the processes stay deployed.
-9. **Review** against the checklist in `references/modeling-principles.md`.
-   Fix violations or list them with a reason. Per-user visibility (P9) is
+9. **Review** against the checklist in `references/modeling-principles.md`
+   (it includes the indexed fields). Fix violations or list them with a
+   reason. Per-user visibility (P9) is
    verified by the role scenarios of `test-process`, not by reading the XML.
 10. **Application README.** Create or update `processes/<app_name>/README.md`
     for every application you touched (template below), including the process
@@ -120,6 +129,7 @@ entity, read `references/modeling-principles.md`. It contains:
 | One flow, a fixed set of forms, roles separate users well enough         | One process                                                                |
 | n users act in parallel, each on their own form, n known only at runtime | One process per user (case per user), created by the coordinator (Prop. 2) |
 | Users with the same role must not see each other's data                  | Separate cases bound to their user (user list), not roles alone (P9)       |
+| A role meaningful beyond one process (several processes, apps, the menu) | Global role (`global="true"`), see Global roles                            |
 | An entity that lives longer than one run (room, customer, contract)      | Data-centric process on the CRUD template (P6)                             |
 | Groups of transitions that share no data field                           | Separate processes joined by channels (P1, P2)                             |
 | The same form needed in several processes                                | Define it once, embed it with taskRef (P5)                                 |
@@ -159,11 +169,23 @@ Application README template (keep it this short):
 
 ## Processes
 
-| Process id | File | Kind | Purpose | Roles | Hash |
-|------------|------|------|---------|-------|------|
+| Process id | File | Kind | Purpose | Roles | Immediate fields | Hash |
+|------------|------|------|---------|-------|------------------|------|
+
+Roles: the role ids; a global role is written `id (global)`.
+
+Immediate fields: the field ids marked `immediate="true"` in the process (see
+Indexed fields), or `none`.
 
 Hash: the file as the AI assistant last wrote or read it. A mismatch means someone
 edited it since, for example in the builder.
+
+## Global roles
+
+| Role id | Used by (process ids) | Meaning |
+|---------|-----------------------|---------|
+
+(or "None.")
 
 ## Process map
 
@@ -244,6 +266,83 @@ from the schema (`dataGroup`, `dataRef`, `layout`) of the chosen version.
   single field of half width stays at `x=0`.
 - Validate after laying out (`validate_process`), and tell the user the
   grouping you chose in the report.
+
+## Indexed fields (`immediate`)
+
+`immediate="true"` is an attribute of `<data>` (type `xs:boolean`). It copies
+the field value into the Elasticsearch case index (`dataSet.<fieldId>`). Only
+such a field can be:
+
+- searched by users in the frontend,
+- picked as a column of a case list (header `<processId>-<fieldId>`),
+- queried with Elasticsearch: `findCasesElastic("... dataSet.<fieldId> ...")` in
+  actions, the filter query of a menu item.
+
+Without it the value is stored in the case, but those queries find nothing and
+the column is empty.
+
+**Choose sparingly.** The number of indexed fields is technically limited for
+the whole system, all processes of all applications together. There is no
+fixed number: it depends on the process. Mark a field only when at least one
+holds:
+
+1. Users search or filter cases by it.
+2. Users want it as a column in a case list: the fields that identify a case
+   and show its state.
+3. An action or a menu item queries cases by it (`findCasesElastic`, menu
+   `filterQuery`, `defaultHeaders`).
+
+Do not mark:
+
+- coordination and technical fields (arc weights, counters, flags for actions),
+- long texts, files, buttons, i18n texts,
+- `taskRef`, `caseRef`, `processRef`, unless cases are searched by them,
+- fields that are only shown or filled in a task form,
+- fields an action only reads from a known case with `f.<fieldId>`.
+
+When unsure, leave the field unmarked and tell the user which candidates you
+left out and why. Adding the attribute later is a process change, so the
+version rule in Critical rules applies. List the chosen fields with a reason
+in the architecture (step 5), in the README and in the report. A later menu
+(`generate-menu-import`) that filters by or shows a field needs it marked here.
+
+## Global roles
+
+A role is declared in the process as `<role>`. With the attribute
+`global="true"` (`<role global="true">`) it is a global role:
+
+- It is identified by its `<id>`. It is created once in the whole system, when
+  the first process that declares it is deployed. Every later deployed process
+  that declares a global role with the same id only references the existing
+  one.
+- It is shared by all versions of a process, and it survives deleting the
+  process.
+- A role without the attribute is local: it belongs to its process only. Two
+  processes with a local role of the same id have two separate roles.
+  Sharing needs `global="true"` in every process that uses the role. If only
+  one process marks it, the others get separate local roles.
+
+**Prefer global roles when it makes sense.** Make a role global when it is a
+function of a person or an organization that makes sense outside one process
+(manager, hr, auditor, clerk), when several processes or applications use it,
+when the menu import uses it for allowed or banned roles, or when its user
+assignments should outlive new versions and redeploys of the process. Keep a
+role local when it only makes sense inside one process (e.g. `reviewer` of one
+workflow step), or when its access should disappear with the process.
+
+Rules:
+
+- Read the READMEs first (step 3). Reuse the id of an existing global role
+  instead of creating a near duplicate (`hr` and `hr_staff`). Create a new id
+  only when none fits.
+- Declare the same global role identically in every process: same `<id>`,
+  same name, no events. Do not rely on which declaration wins.
+- The id is shared system-wide: use a business term, not a generic id that
+  could clash with an unrelated meaning.
+- List every role in the architecture (step 5) as global or local with one
+  reason. Record global roles in the README (table "Global roles").
+- Changing a role between local and global in an implemented process is a
+  process change: the version rule in Critical rules applies.
 
 ## Quick reference
 
@@ -333,7 +432,8 @@ Solution: do not bump the version. Check `list_processes`, then redeploy with
 
 Petriflow version used; process versions (new, unchanged, or old → new); the approved architecture (applications, full
 process
-ids); files written, including application READMEs; per file the
+ids); the indexed fields (`immediate="true"`) per process with the reason,
+and candidates left out; the roles, global or local with the reason; files written, including application READMEs; per file the
 `validate_process` result (issues → fixes → clean); actions written;
 Stage 2 result (including replaced processes and the role scenario matrix) or
 why it did not run; principle
@@ -370,3 +470,18 @@ deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
 - Not bumping the process version when the user gave a new instruction to edit
   an implemented process.
 - Mixing up the Petriflow version and the process `<version>`.
+- `immediate="true"` on (almost) every field "to be safe", or on technical and
+  long fields. The limit is shared by the whole system.
+- No `immediate="true"` on a field that users search by, show as a column, or
+  that an action or menu filter queries with Elasticsearch: the query finds
+  nothing and the column is empty.
+- Marking indexed fields without a reason in the approved architecture.
+- A role shared by several processes or applications left local, so each
+  process has its own separate role with the same id.
+- `global="true"` in only one of the processes that should share the role.
+- A near duplicate of an existing global role (`hr_staff` next to `hr`), or a
+  global role declared differently in two processes.
+- Every role global "because it is preferred", including roles that only make
+  sense inside one process.
+- A global role without a reason in the approved architecture, or missing in
+  the README table "Global roles".
