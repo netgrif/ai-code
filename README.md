@@ -3,12 +3,13 @@
 **Netgrif AI Code** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for any AI coding
 assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
 [Petriflow](https://petriflow.org/#/) (workflow, data, forms, roles, actions and the menu), checks it and runs it.
-Login, the portal, task lists and the database are already there.
-
-Netgrif orchestrates the process: each step is done by a person, an existing system or an AI agent, and a person
-always has the last word. Whatever an agent cannot solve goes to a person. If you need more, extend it with your own Java
+Login, the portal, task lists and the database are already there. If you need more, extend it with your own Java
 modules, or with your own Angular frontend through the
 [frontend starter](https://github.com/netgrif/nae-frontend-application-starter).
+
+Netgrif orchestrates the process: each step is done by a person, an existing system or an AI agent, and a person
+always has the last word. Whatever an agent cannot solve goes to a person.
+[Watch: AI agents inside real processes](https://www.youtube.com/watch?v=Msmqxwey94g)
 
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and any AI coding assistant.** Everything
 else runs in containers: no Java, Node or database to install.
