@@ -69,6 +69,7 @@ services:
       netgrif.engine.security.auth.admin-password: password
       netgrif.engine.management.endpoint.health.show-details: always
       netgrif.engine.management.health.mail.enabled: false
+      netgrif.engine.dashboard.enabled: "true"
       netgrif.engine.management.health.elasticsearch.enabled: false
       netgrif.otel.sdk.disabled: 'true'
       netgrif.otel.traces.exporter: none

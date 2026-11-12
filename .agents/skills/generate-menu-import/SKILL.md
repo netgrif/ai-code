@@ -1,6 +1,6 @@
 ---
 name: generate-menu-import
-description: Generates a menu import process, a Petriflow process whose only logic is an upload event action that creates the application menu (menu items, folders and their views) through the NAE menu API. Use when the user wants to create or change the app menu, menu items, side navigation entries, folders in the menu, which processes or views appear in the menu and for which roles, or mentions "menu import" or MenuItemBody. Not for designing business processes (use generate-process) or for only validating or deploying (use test-process).
+description: Generates a menu import process, a Petriflow process whose only logic is an upload event action that creates the application menu (menu items, folders and their views) through the NAE menu API. Use when the user wants to create or change the app menu, menu items, side navigation entries, folders in the menu, which processes or views appear in the menu and for which roles, or mentions "menu import" or MenuItemBody. Not for designing business processes (use generate-process), for dashboard items (use generate-dashboard-items) or for only validating or deploying (use test-process).
 compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
 metadata:
   tested: false
