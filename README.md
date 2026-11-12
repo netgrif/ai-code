@@ -1,4 +1,4 @@
-# Describe a business process. Your AI assistant turns it into a running app.
+# Describe a business process. Your AI assistant turns it into a running app where people, systems and AI agents work together.
 
 **Netgrif AI Code** is the whole [Netgrif](https://netgrif.com) platform on your machine, prepared for any AI coding
 assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
@@ -6,6 +6,10 @@ assistant. You describe what the business needs; the assistant generates a compl
 Login, the portal, task lists and the database are already there. If you need more, extend it with your own Java
 modules, or with your own Angular frontend through the
 [frontend starter](https://github.com/netgrif/nae-frontend-application-starter).
+
+Netgrif orchestrates the process: each step is done by a person, an existing system or an AI agent, and a person
+always has the last word. Whatever an agent cannot solve goes to a person.
+[Watch: AI agents inside real processes](https://www.youtube.com/watch?v=Msmqxwey94g)
 
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and any AI coding assistant.** Everything
 else runs in containers: no Java, Node or database to install.
@@ -59,13 +63,16 @@ Production use needs a commercial licence: see [Licence and production use](#lic
 
 ## What it is good for
 
-Netgrif is the tool for when you need **processes, tasks and an overview of anything that goes on**: who does what,
-in which order, with which data, and where each thing stands right now. In a large company, a small team, a school,
-a municipality, a club or a one-off event alike.
+Netgrif is the tool for **orchestrating people, systems and AI agents in one process, with a human in the loop**:
+who does what, in which order, with which data, and where each thing stands right now. In a large company, a small
+team, a school, a municipality, a club or a one-off event alike.
 
 **A good fit:** any process where people, steps, decisions and documents meet, inside an organisation or open to its
 customers, members and partners:
 
+- **Orchestration** of people, existing systems and AI agents into one process and one task list. An agent step is a
+  task whose action sends the case data to a language model and writes the answer back; a person confirms the result
+  or takes the case over.
 - **Requests and approvals**, where someone asks, someone decides and everyone sees the state: leave, purchases,
   expenses, access rights
 - **Case handling**, where a case moves through several people or teams until it is resolved: complaints, claims,
@@ -83,7 +90,6 @@ customers, members and partners:
 - **Onboarding and offboarding**, where HR, managers and IT each tick off their part
 - **Projects, events and recurring work**, from a team's checklist to the preparation of a conference or a season of a
   sports club
-- **Orchestration** of people and existing systems into one task list
 
 </details>
 
