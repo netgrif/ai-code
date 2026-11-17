@@ -114,6 +114,36 @@ tool.
 
 More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
+### Versions and requirements
+
+Everything below runs in containers from [`docker-compose.yaml`](docker-compose.yaml). Nothing is installed on your
+machine or server: Java runs inside the engine image, the databases in their own images.
+
+| Container           | Image                                       | Inside                                                                  | Port                         |
+|---------------------|---------------------------------------------|-------------------------------------------------------------------------|------------------------------|
+| `engine`            | `netgrif/application-engine-with-mcp:7.0.3` | Java 21 (Eclipse Temurin JRE), Spring Boot 4.1, Application Engine 7.0.3 | 8080                         |
+| `frontend`          | `netgrif/application-engine-frontend:7.0.3` | The portal: Netgrif Components 7.0.3 (Angular 17.3)                     | 4200                         |
+| `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
+| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.0.0`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
+| `nae-mongodb`       | `mongo:8.0.3`                               | MongoDB, single-node replica set `rs0`; limit 2 CPUs, 2 GB RAM          | 27017                        |
+| `nae-elasticsearch` | `elasticsearch:8.19.15`                     | Elasticsearch, single node, security off; limit 1.5 CPUs, 1.5 GB RAM     | 9200, 9300                   |
+| `nae-redis`         | `redis:8`                                   | Redis, cache and sessions                                               | 6379                         |
+| `init-perms`        | `busybox:1.37`                              | A one-off job that sets the owner of `nae/engine/logs` and `storage`    | none                         |
+
+**What you need:**
+
+- **Docker** with Docker Compose v2 (Docker Desktop on Mac and Windows, Docker Engine on Linux), or Podman.
+- **Memory and CPU:** at least 8 GB RAM and 4 CPUs for Docker. MongoDB and Elasticsearch alone may take up to 3.5 GB.
+- **Disk:** about 1.7 GB of images to download on the first start, more once unpacked, plus your data and logs.
+- **Network** on the first start, to pull the images from Docker Hub.
+
+**On a server** (your company's Netgrif portal, a commercial licence for production):
+
+- The same images run the same way. Change the admin password in `docker-compose.yaml` before the first start.
+- The compose file publishes the database ports (27017, 9200, 9300, 6379) and the MCP port (3000) for local
+  development. On a server, remove them or bind them to `127.0.0.1`, and put the portal behind HTTPS.
+- On Linux hosts, Elasticsearch needs `vm.max_map_count` of at least 262144: `sudo sysctl -w vm.max_map_count=262144`.
+
 ### Folders and permissions
 
 The stack needs Docker Compose v2 (`docker compose`, not `docker-compose`). The folders it shares with your machine:
