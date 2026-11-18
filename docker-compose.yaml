@@ -1,7 +1,20 @@
+# Local Netgrif Platform 1.1.0 cluster (NAE 7.1.0).
+#
+# The application engine runs as the root worker; the MCP server runs as a
+# cluster plugin (one per cluster) instead of inside the engine image. The
+# platform component images come from the Netgrif registry:
+#   docker login docker.nexus.netgrif.com
+#
+# The frontend is the prebuilt 7.1.0 image. It talks to the gateway, which is
+# published on 8080 (the URL the image is built with) and 8800 (the gateway
+# default), so either configuration reaches the cluster.
+
+x-admin-password: &admin-password password
+
 services:
 
   petriflow-mcp:
-    image: netgrif/petriflow-mcp:1.0.0
+    image: netgrif/petriflow-mcp:1.1.1
     environment:
       PETRIFLOW_MODE: LOCAL
     ports:
@@ -26,7 +39,7 @@ services:
       - netgrif-platformnet
 
   frontend:
-    image: netgrif/application-engine-frontend:7.0.3
+    image: netgrif/application-engine-frontend:7.1.0
     ports:
       - "4200:80"
     healthcheck:
@@ -35,7 +48,7 @@ services:
       timeout: 10s
       retries: 10
     depends_on:
-      engine:
+      nae-gateway:
         condition: service_healthy
     networks:
       - netgrif-platformnet
@@ -52,38 +65,115 @@ services:
     networks:
       - netgrif-platformnet
 
-  engine:
-    image: netgrif/application-engine-with-mcp:7.0.3
+  nae-admin:
+    image: docker.nexus.netgrif.com/netgrif-admin:1.1.0
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8888/manage/health | grep UP" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    environment:
+      NETGRIF_ADMIN_NAMESPACE: netgrif
+      netgrif.admin.data.mongodb.uri: mongodb://nae-mongodb/netgrif_admin
+      netgrif.admin.data.redis.host: nae-redis
+      netgrif.admin.data.redis.namespace: netgrif
+      netgrif.admin.setup.admin.password: *admin-password
+      netgrif.admin.setup.zones[0].name: z1
+      netgrif.admin.setup.zones[0].description: "Local development zone"
+      otel.sdk.disabled: 'true'
+      otel.traces.exporter: none
+      otel.metrics.exporter: none
+      otel.logs.exporter: none
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:9999:9999"
+    depends_on:
+      nae-mongodb:
+        condition: service_started
+      nae-redis:
+        condition: service_started
+    networks:
+      - netgrif-platformnet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nae-gateway:
+    image: docker.nexus.netgrif.com/netgrif-gateway:1.1.0
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8800/manage/health | grep UP" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    environment:
+      netgrif.gateway.node.zone: z1
+      netgrif.gateway.node.host: nae-gateway
+      NETGRIF_GATEWAY_NODE_ADMIN_NODE_HTTP_HOST: nae-admin
+      NETGRIF_GATEWAY_NODE_ADMIN_NODE_GRPC_HOST: nae-admin
+      NETGRIF_GATEWAY_DATA_REDIS_HOST: nae-redis
+      NETGRIF_GATEWAY_AUTH_EXCHANGE_FROM_AUTHORIZATION: "true"
+      otel.sdk.disabled: 'true'
+      otel.traces.exporter: none
+      otel.metrics.exporter: none
+      otel.logs.exporter: none
+    ports:
+      - "8080:8800"
+      - "8800:8800"
+    depends_on:
+      nae-admin:
+        condition: service_healthy
+      engine:
+        condition: service_healthy
+      nae-redis:
+        condition: service_started
+    networks:
+      - netgrif-platformnet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  engine:
+    # Root worker of the cluster. The MCP server is a separate plugin service.
+    image: docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8080/manage/health | grep UP" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
     environment:
       netgrif.engine.server.port: 8080
       NETGRIF_ENGINE_DATA_DATABASE_NAME: netgrif_nae_root
       NETGRIF_ENGINE_DATA_MONGODB_URI: mongodb://nae-mongodb
       NETGRIF_ENGINE_DATA_ELASTIC_URL: nae-elasticsearch
       NETGRIF_ENGINE_DATA_REDIS_HOST: nae-redis
-      NETGRIF_WORKER_NODE_NAME: NETGRIF Application Engine
-      NETGRIF_WORKER_NODE_HOST: nae-root-engine
+      NETGRIF_WORKER_NODE_NAME: NETGRIF Root Worker
+      NETGRIF_WORKER_NODE_HOST: engine
       NETGRIF_WORKER_NODE_NODE_TYPE: ENGINE_ROOT
       netgrif.engine.data.redis.namespace: netgrif
-      netgrif.engine.security.auth.admin-password: password
+      NETGRIF_WORKER_NODE_ADMIN_NODE_HOST: nae-admin
+      NETGRIF_WORKER_NODE_IN_CLOUD: 'false'
+      NETGRIF_WORKER_NODE_IS_ROOT: 'true'
+      # The tested cluster compose uses this key. The admin reports the root
+      # worker's zone as ENGINE_ROOT; the gateway routes to the root worker.
+      netgrif.worker.zone: z1
+      netgrif.engine.logging.file.path: log
+      netgrif.engine.management.otlp.metrics.export.enabled: 'false'
+      netgrif.engine.management.endpoint.shutdown.enabled: 'false'
+      netgrif.engine.management.health.ldap.enabled: 'false'
+      netgrif.engine.main.allow-bean-definition-overriding: 'true'
+      netgrif.engine.management.health.mail.enabled: 'false'
       netgrif.engine.management.endpoint.health.show-details: always
-      netgrif.engine.management.health.mail.enabled: false
-      netgrif.engine.management.health.elasticsearch.enabled: false
-      netgrif.otel.sdk.disabled: 'true'
-      netgrif.otel.traces.exporter: none
-      netgrif.otel.metrics.exporter: none
-      netgrif.otel.logs.exporter: none
-      netgrif.engine.security.server-patterns: /api/auth/signup,/api/auth/token/verify,/api/auth/reset,/api/auth/recover,/api/public/**,/v3/api-docs/public,/manage/health,/manage/health/liveness,/manage/health/readiness,/mcp/**
-      spring.ai.mcp.server.type: SYNC
-      spring.ai.mcp.server.protocol: streamable
-      spring.ai.mcp.server.name: nae-mcp
-    healthcheck:
-      test: [ "CMD", "curl", "-sf", "http://localhost:8080/manage/health" ]
-      interval: 10s
-      timeout: 10s
-      retries: 15
-      start_period: 180s
+      netgrif.engine.management.metrics.export.simple: enabled
+      netgrif.engine.management.metrics.storage.cron: "0 0 2 * * *"
+      netgrif.engine.actions.imports: org.springframework.data.domain.PageRequest,org.springframework.data.mongodb.core.query.Criteria,org.springframework.data.domain.Page,com.netgrif.application.engine.objects.auth.domain.AbstractUser,com.netgrif.application.engine.objects.auth.domain.Realm,com.netgrif.application.engine.objects.workflow.domain.ProcessResourceId,com.netgrif.application.engine.objects.workflow.domain.TaskPair,com.netgrif.application.engine.objects.workflow.domain.Case,com.netgrif.application.engine.objects.workflow.domain.Task,com.netgrif.application.engine.objects.petrinet.domain.PetriNet,com.netgrif.application.engine.objects.petrinet.domain.roles.ProcessRole,org.springframework.data.mongodb.core.query.Query,org.springframework.data.domain.Pageable,
+      otel.sdk.disabled: 'true'
+      otel.traces.exporter: none
+      otel.metrics.exporter: none
+      otel.logs.exporter: none
+    ports:
+      - "127.0.0.1:8082:8080"
     volumes:
       - ./nae/engine/logs:/opt/netgrif/engine/log:z
       - ./nae/engine/storage:/opt/netgrif/engine/storage:z
@@ -91,11 +181,46 @@ services:
     depends_on:
       init-perms:
         condition: service_completed_successfully
+      nae-admin:
+        condition: service_healthy
       nae-mongodb:
-        condition: service_healthy
+        condition: service_started
       nae-elasticsearch:
-        condition: service_healthy
+        condition: service_started
       nae-redis:
+        condition: service_started
+    networks:
+      - netgrif-platformnet
+
+  nae-mcp-plugin:
+    image: docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0
+    restart: unless-stopped
+    environment:
+      # Development only: /mcp is not authenticated and acts as the admin account.
+      NETGRIF_ENGINE_MCP_IMPERSONATION_ENABLED: 'true'
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_BASE_URL: http://nae-admin:8888
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_USERNAME: admin
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_PASSWORD: *admin-password
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_WORKER_NAME: NETGRIF Root Worker
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_REALM_ID: Admin
+      NETGRIF_PLUGIN_SERVICE_HOST: nae-mcp-plugin
+      NETGRIF_PLUGIN_SERVICE_GRPC_PORT: 9091
+      NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_HOST: nae-admin
+      NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_GRPC_PORT: 9999
+      NETGRIF_PLUGIN_SERVICE_SEARCH_DEFAULT_ZONE: z1
+    ports:
+      # Loopback only: anyone reaching 8700 acts as the admin account.
+      - "127.0.0.1:8700:8700"
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -sf http://127.0.0.1:8700/manage/health | grep UP" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      nae-admin:
+        condition: service_healthy
+      engine:
         condition: service_healthy
     networks:
       - netgrif-platformnet
@@ -123,7 +248,6 @@ services:
       - netgrif-platformnet
 
   nae-elasticsearch:
-    #    image: elasticsearch:9.4.1
     image: elasticsearch:8.19.15
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s" ]

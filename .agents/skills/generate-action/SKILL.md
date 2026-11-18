@@ -1,11 +1,11 @@
 ---
 name: generate-action
 description: Writes and validates Petriflow actions, the Groovy code that runs on process events, using the Petriflow Action API. Use when writing or changing an action inside a specific process XML, e.g. "compute the total when the price changes", "create a case when this task finishes", "hide a field after approval", or any reaction to data set/get or task assign/finish/cancel/delegate events. Not for designing a new process or its net (use generate-process).
-compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp).
+compatibility: Requires the petriflow-mcp MCP server 1.1.1 or newer (http://localhost:3000/mcp).
 metadata:
   tested: false
   mcp-server: petriflow-mcp
-  version: 0.3.0
+  version: 0.4.0
 ---
 
 # Generate Petriflow Action
@@ -54,6 +54,11 @@ Always generate an action in the context of its target process XML.
     - Logic that is a whole service (e.g. OCR of a document) is a module: use the
       `write-module` skill, then call it from the action as
       `NaeModule.<group>.<serviceBeanName>.<method>(args)`.
+    - Validate the Groovy with `validate_action` before inserting it. Pass the
+      action definition as it appears in the XML, including the mappings
+      (`name: f.name, ...;`); the validator rewrites them and compiles against
+      the DSL. It cannot check that the ids exist in the process, so Stage 1
+      still does that. Fix every reported issue and validate again.
 6. **Insert:** put the code in CDATA with a unique `id` (`actionN`, as in the
    process). If the user asked only for code, return the XML snippet and its
    location instead of editing the file.
@@ -107,11 +112,15 @@ function, or, for a whole service, use the `write-module` skill.
 ## Output
 
 The action XML, where it was placed (event, phase), a one-line description of
-what it does, the API methods used, and the validation results.
+what it does, the API methods used, and the results of `validate_action` and
+`validate_process`.
 
 ## Common mistakes
 
 - Writing API method names or parameters from memory.
+- Skipping `validate_action` and relying only on the process validation.
+- Expecting `validate_action` to check that field/transition ids exist; it
+  compiles the DSL, the process validation checks the ids.
 - Mapping fields the code does not use, or ids that don't exist in the process.
 - Referring to another process by its short name instead of the full
   `<app_name>/<process_name>` id.

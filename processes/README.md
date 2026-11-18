@@ -25,11 +25,12 @@ greeting with an action, and then asks whether the user is done.
 
 ## Importing a process
 
-Import processes after the engine has started (see [`../nae/README.md`](../nae/README.md)).
+Import processes after the cluster has started (see [`../nae/README.md`](../nae/README.md)).
 
-- **In the UI:** open the "more" icon (bottom left), choose the **Workflow** view, click **+**, select the XML file and
-  click **Upload**.
-- **With an AI agent:** through the `deploy_process` tool of the local NAE MCP server (see the main README).
+- **With an AI agent:** through the `deploy_process` tool of the cluster MCP plugin (see the main README). For several
+  processes of one application, build an application package and use `upload_application` + `deploy_application`.
+- **In the platform admin:** the admin UI at http://localhost:8888 manages application packages. The frontend's
+  Workflow view is not the primary import path in a cluster; do not rely on it without checking.
 
 Then create a case from the process and work through its tasks.
 
@@ -37,12 +38,12 @@ Then create a case from the process and work through its tasks.
 
 - Application names and process names are snake_case. The application folder is named after the application.
 - The process `id` is `<app_name>/<process_name>` (for example `hello_world/hello_world`) and must be unique across the
-  whole Application Engine deployment. The file is `processes/<app_name>/<process_name>.xml`.
+  whole cluster deployment. The file is `processes/<app_name>/<process_name>.xml`.
 - The process `<version>` (not the Petriflow language version) starts at `1.0.0` and is only increased when you ask for
   a change to an already implemented process. An AI agent keeps the version while it iterates on its own implementation
   and redeploys the same version with `replaceExisting`, which deletes the old process together with its cases and
   tasks.
 - Keep the application `README.md` up to date when you add or change a process.
-- Validate every change, for example with the Petriflow MCP tool `validate_process`.
+- Validate every change, for example with the Petriflow MCP tool `validate_process` and the application name as `appId`.
 - Keep actions short and use the Petriflow Action API. Logic that does not fit in a process belongs in a
   [module](../modules/README.md).

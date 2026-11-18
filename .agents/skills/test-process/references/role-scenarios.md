@@ -40,8 +40,8 @@ it. It tests the process, not the engine-mcp mechanism itself.
 1. Deploy the process (see "Redeploying while iterating" in `SKILL.md`) and read
    its role ids with `get_process`.
 2. Create one test user per role to test, plus one user without roles. Check the
-   `create_user` schema for its parameters and give every test user a
-   recognizable name prefix, so cleanup can tell them from real users.
+   `create_user` schema for its parameters and prefix every test user with
+   `mcptest_`, so the report and a future cleanup can tell them from real users.
 3. `assign_role` per user with the ids from step 1. Check the result with
    `get_user`.
 4. `whoami` with each user's token: it must return exactly that user. If not,
@@ -94,7 +94,10 @@ Cover the ones that apply to the process:
 1. Delete the cases you created, including cases that actions created in other
    processes, with `delete_case` and no token. A replaced process already took
    its cases with it.
-2. Delete the test users with `delete_user`.
+2. The plugin runtime cannot delete users: the admin REST API has no
+   user-delete route, so `delete_user` returns an error. Do not claim it
+   succeeded; list the `mcptest_` users in the report so they can be removed
+   later. A future admin image fix will add the endpoint.
 
 Never delete anything you did not create. The deployed processes and the menu
 stay. Report what you deleted and anything you could not find or delete.

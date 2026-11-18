@@ -1,7 +1,8 @@
 # Netgrif Application Engine
 
 Data of the local Netgrif stack and notes about the stack itself. The stack is defined in
-[`docker-compose.yaml`](../docker-compose.yaml) in the repository root: engine, frontend, Petriflow MCP and databases.
+[`docker-compose.yaml`](../docker-compose.yaml) in the repository root: platform admin, gateway, root worker, frontend,
+Petriflow MCP, engine MCP plugin and databases.
 For the overall project, see the [main README](../README.md). It also describes the folders the stack shares with your
 machine and their permissions.
 
@@ -25,26 +26,31 @@ docker compose down                   # stop and remove containers
 
 | Service             | Image                                       | Ports      | Purpose                                                  |
 |---------------------|---------------------------------------------|------------|----------------------------------------------------------|
-| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.0.0`               | 3000       | Petriflow validation and docs for AI agents              |
+| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.1`               | 3000       | Petriflow validation and docs for AI agents              |
 | `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | 4300 → 80  | Visual editor of the files in `processes/`               |
+| `nae-admin`         | `docker.nexus.netgrif.com/netgrif-admin:1.1.0` | 8888, 9999 (this machine only) | Cluster admin: users, processes, nodes, applications     |
+| `nae-gateway`       | `docker.nexus.netgrif.com/netgrif-gateway:1.1.0` | 8080 → 8800, 8800 → 8800 | Cluster entry point; the frontend calls it             |
+| `engine`            | `docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0` | 8082 → 8080 | NAE 7.1.0 root worker                              |
+| `nae-mcp-plugin`    | `docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0` | 8700 → 8700 | Engine MCP server as a cluster plugin         |
 | `init-perms`        | `busybox:1.37`                              | none       | One-off job: owner of `engine/logs` and `engine/storage` |
-| `frontend`          | `netgrif/application-engine-frontend:7.0.3` | 4200 → 80  | Standard Netgrif frontend (single-page app)              |
-| `engine`            | `netgrif/application-engine-with-mcp:7.0.3` | 8080       | Application Engine, REST API and MCP server              |
+| `frontend`          | `netgrif/application-engine-frontend:7.1.0` | 4200 → 80  | Standard Netgrif frontend (single-page app)              |
 | `nae-mongodb`       | `mongo:8.0.3` (replica set `rs0`)           | 27017      | Database                                                 |
 | `nae-elasticsearch` | `elasticsearch:8.19.15`                     | 9200, 9300 | Search index                                             |
 | `nae-redis`         | `redis:8`                                   | 6379       | Cache                                                    |
 
-The frontend is served to your browser as a single-page app, so the browser calls the engine on
+The frontend is served to your browser as a single-page app, so the browser calls the gateway on
 `http://localhost:8080` directly. It is a prebuilt image: there are no frontend sources in this repository. The
-frontend starts after the engine is healthy. The engine starts after `init-perms` has finished.
+frontend starts after the gateway is healthy. The gateway starts after the admin and root worker are healthy; the
+root worker starts after `init-perms` has finished.
 
 The builder is published on `127.0.0.1` only, because it can write process files without a login. It reads and writes
 `../processes/` directly, so changes show up in your files at once.
 
-The engine is configured through environment variables in [`docker-compose.yaml`](../docker-compose.yaml). Once it is
-ready, `curl http://localhost:8080/manage/health` returns status `UP`. Log in at <http://localhost:4200> as `admin`; its
-password is set in `docker-compose.yaml` (`netgrif.engine.security.auth.admin-password`), a local dev default. Change it
-before you share the machine with anyone.
+The cluster is configured through environment variables in [`docker-compose.yaml`](../docker-compose.yaml). Once it is
+ready, `curl http://localhost:8080/manage/health` (gateway), `curl http://localhost:8888/manage/health` (admin) and
+`curl http://localhost:8700/manage/health` (MCP plugin) return status `UP`. Log in at <http://localhost:4200> as
+`admin`; its password is set in `docker-compose.yaml` (`netgrif.admin.setup.admin.password`), a local dev default.
+Change it before you share the machine with anyone.
 
 The database services have no volumes configured, so their data is removed together with the containers
 (`docker compose down`).
@@ -53,4 +59,4 @@ The database services have no volumes configured, so their data is removed toget
 
 - **Processes:** [`../processes/`](../processes/README.md). Forms and the application menu are defined in processes.
 - **Modules:** source code lives in [`../modules/`](../modules/README.md) (building needs Java 21 and Maven). Built
-  output is unzipped into [`engine/modules/`](engine/modules/README.md), which is mounted into the engine container.
+  output is unzipped into [`engine/modules/`](engine/modules/README.md), which is mounted into the root worker.

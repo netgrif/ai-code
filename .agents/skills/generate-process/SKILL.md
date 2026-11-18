@@ -1,11 +1,11 @@
 ---
 name: generate-process
 description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to create a new application in processes/, or to split an application into several processes. Not for writing a single action's Groovy code (use generate-action), for the application menu (use generate-menu-import) or for only validating or deploying a process (use test-process).
-compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
+compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need the local platform cluster with the engine-mcp plugin (http://localhost:8700/mcp).
 metadata:
   tested: false
   mcp-server: petriflow-mcp
-  version: 0.5.0
+  version: 0.6.0
 ---
 
 # Generate Petriflow Process
@@ -25,7 +25,9 @@ validated.
 - No XML before the user approved the architecture (step 4).
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
-- `validate_process` after every change to a process file, until clean.
+- `validate_process` with `appId` after every change to a process file, until
+  clean. Petriflow 1.1.1 requires the root id to be `<appId>/<processId>` when
+  `appId` is set.
 - Two versions, do not mix them up: the *Petriflow version* is the language
   version from `list_versions`; the *process version* is the `<version>`
   element of the XML (a new process starts at `1.0.0`).
@@ -44,7 +46,9 @@ validated.
 2. **Petriflow version and language.**
     - Read `petriflow://versions` (or tool `list_versions`) and take the latest
       semver, unless the user or project pins one.
-    - Read `petriflow://versions/{version}/overview`.
+    - Read `petriflow://versions/{version}/overview`. For form field
+      components use `list_components` and `get_component`; never invent a
+      `<component><name>` value.
     - List the MCP resources and resource templates; read the schema and the
       examples for that version that match the problem (e.g. arcs, roles,
       caseRef, taskRef, user lists).
@@ -351,8 +355,11 @@ Rules:
 | Versions              | `petriflow://versions` / `list_versions`               |
 | Overview of a version | `petriflow://versions/{version}/overview`              |
 | Schema, examples      | MCP resource list / templates for that version         |
+| Components            | `list_components`, `get_component`                     |
 | Action API            | `generate-action` skill (`list_actions`, `get_action`) |
-| Validate              | `test-process` skill (`validate_process`)              |
+| Action validation     | `validate_action` (see `generate-action`)              |
+| Validate              | `test-process` skill (`validate_process` with `appId`) |
+| Application manifest  | `generate_app_manifest` (cluster package)              |
 
 - **Channel:** an action of the sender navigates one caseRef field and fires a *system transition* in the referenced
   case. A system transition has no role
@@ -456,6 +463,10 @@ deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
   one row.
 - A process id without the application prefix, or a prefix that does not match
   the folder name.
+- Calling `validate_process` without `appId`, so the application-scoped id rule
+  is not enforced.
+- A `<component><name>` value that is not from `list_components` /
+  `get_component`.
 - A new data-centric process for an entity another application already owns.
 - Forgetting to create or update the application `README.md`.
 - A process map that is missing or out of sync with the Channels and

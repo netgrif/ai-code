@@ -1,7 +1,7 @@
-# Menu API reference (NAE 7.0.3)
+# Menu API reference (NAE 7.1.0)
 
 Extract of the menu part of `ActionDelegate` and the body classes it uses.
-Source: `../application-engine` at tag `v7.0.3`. Line numbers point into
+Source: `../application-engine` at tag `v7.1.0`. Line numbers point into
 `application-engine/src/main/groovy/com/netgrif/application/engine/petrinet/domain/dataset/logic/action/ActionDelegate.groovy`.
 Body classes live in `nae-object-library`, package
 `com.netgrif.application.engine.objects.workflow.domain.menu`. When the NAE
@@ -103,19 +103,19 @@ whole deployment.
 
 | Line | Signature | Behavior |
 |------|-----------|----------|
-| 2876 | `Case createOrUpdateMenuItem(MenuItemBody body)` | Upsert by identifier. Update rewrites name, icons, roles, view and flags. To change the path of an existing item use `moveMenuItem`. **Default choice.** |
-| 2346 | `Case getOrCreateMenuItem(MenuItemBody body)` | Returns the existing item unchanged, or creates it. |
-| 2921 | `Case createOrIgnoreMenuItem(MenuItemBody body)` | Same effect as `getOrCreateMenuItem`. |
-| 2342 | `Case createMenuItem(MenuItemBody body)` | Creates; throws `IllegalArgumentException` if the identifier exists. Avoid in menu imports. |
-| 2960 | `Case updateMenuItem(Case item, MenuItemBody body)` | Updates a found item. |
-| 2530 | `Case findMenuItem(String identifier)` | Item by identifier, or null. |
-| 2550 | `boolean existsMenuItem(String identifier)` | Existence check. |
-| 2539 | `Case findFolderCase(String path)` | Folder item for a path. |
-| 2490 | `void moveMenuItem(Case item, String destUri)` | Moves the item, creates missing folders. Cyclic moves throw. |
-| 2051 | `changeMenuItem item <attr> { value }` | DSL; attributes `allowedRoles`, `bannedRoles`, `uri`, `title`, `menuIcon`, `tabIcon`, `order`, `useCustomView`, `customViewSelector`. |
-| 2113, 2130 | `changeMenuItemOrder(Case item or String identifier, order)` | Sets `order`; null clears it. |
-| 2188 | `deleteMenuItem(Case item)` | Deletes the item (asynchronously). |
-| 2701 | `I18nString i18n(String value, Map<String,String> translations)` | Builds a translated name. |
+| 2878 | `Case createOrUpdateMenuItem(MenuItemBody body)` | Upsert by identifier. Update rewrites name, icons, roles, view and flags. To change the path of an existing item use `moveMenuItem`. **Default choice.** |
+| 2348 | `Case getOrCreateMenuItem(MenuItemBody body)` | Returns the existing item unchanged, or creates it. |
+| 2923 | `Case createOrIgnoreMenuItem(MenuItemBody body)` | Same effect as `getOrCreateMenuItem`. |
+| 2344 | `Case createMenuItem(MenuItemBody body)` | Creates; throws `IllegalArgumentException` if the identifier exists. Avoid in menu imports. |
+| 2962 | `Case updateMenuItem(Case item, MenuItemBody body)` | Updates a found item. |
+| 2532 | `Case findMenuItem(String identifier)` | Item by identifier, or null. |
+| 2552 | `boolean existsMenuItem(String identifier)` | Existence check. |
+| 2541 | `Case findFolderCase(String path)` | Folder item for a path. |
+| 2492 | `void moveMenuItem(Case item, String destUri)` | Moves the item, creates missing folders. Cyclic moves throw. |
+| 2053 | `changeMenuItem item <attr> { value }` | DSL; attributes `allowedRoles`, `bannedRoles`, `uri`, `title`, `menuIcon`, `tabIcon`, `order`, `useCustomView`, `customViewSelector`. |
+| 2115, 2132 | `changeMenuItemOrder(Case item or String identifier, order)` | Sets `order`; null clears it. |
+| 2190 | `deleteMenuItem(Case item)` | Deletes the item (asynchronously). |
+| 2703 | `I18nString i18n(String value, Map<String,String> translations)` | Builds a translated name. |
 
 Creating an item whose path has no folder yet creates the folder
 automatically (named after the last path segment, icon `folder`). Create
@@ -129,8 +129,8 @@ They return a `TabbedCaseViewBody` (typed as `ViewBody`); configure it, then
 
 | Line | Signature | Result |
 |------|-----------|--------|
-| 2390 | `createDefaultViewBody(MenuItemBody body, String filterQuery, List<String> filterAllowedNets = [], List<String> defaultHeaders = null, String filterType = "Case", String filterVisibility = "private", def filterMetadata = null)` | Case list filtered by `filterQuery`, chained to a task list of the opened case. |
-| 2355 | `createSingleTaskViewBody(MenuItemBody body, String filterQuery, String transitionId, List<String> filterAllowedNets = [], List<String> defaultHeaders = null, String filterType = "Case", String filterVisibility = "private", def filterMetadata = null)` | Case list chained to a single task (`transitionId`) of the opened case. |
+| 2392 | `createDefaultViewBody(MenuItemBody body, String filterQuery, List<String> filterAllowedNets = [], List<String> defaultHeaders = null, String filterType = "Case", String filterVisibility = "private", def filterMetadata = null)` | Case list filtered by `filterQuery`, chained to a task list of the opened case. |
+| 2357 | `createSingleTaskViewBody(MenuItemBody body, String filterQuery, String transitionId, List<String> filterAllowedNets = [], List<String> defaultHeaders = null, String filterType = "Case", String filterVisibility = "private", def filterMetadata = null)` | Case list chained to a single task (`transitionId`) of the opened case. |
 
 Both set `showCreateCaseButton = false`, `showMoreMenu = true`,
 `allowHeaderTableMode = true`. `defaultHeaders = null` means no default
@@ -142,11 +142,11 @@ headers; otherwise each header is `<process_id>-<field_id>` or a meta header
 
 ## Roles
 
-`Map<String, I18nString> collectRolesForPreferenceItem(Map<String, String> roles)` (line 2672)
+`Map<String, I18nString> collectRolesForPreferenceItem(Map<String, String> roles)` (line 2674)
 
 - Map `roleId → processId`, e.g. `["approver": "leave/leave_request"]`.
 - Global role: `["admin": GLOBAL_ROLE]` (`ActionDelegate.GLOBAL_ROLE`, line
-  122). Give the bare id; the method adds the `global_` prefix itself.
+  124). Give the bare id; the method adds the `global_` prefix itself.
 - Unknown global role: silently skipped.
 - Unknown process: `IllegalArgumentException`.
 - Known process without that role: `NullPointerException`.
@@ -208,7 +208,7 @@ A single task view cannot be the primary view.
 
 ## Deprecated, do not use
 
-Still present in 7.0.3 but deprecated; group arguments are ignored:
+Still present in 7.1.0 but deprecated; group arguments are ignored:
 `createOrUpdateMenuItemAndFilter` (both overloads),
 `createOrIgnoreMenuItemAndFilter`, `createOrUpdateMenuItem(uri, identifier, name, icon, filter, ...)`,
 `createOrUpdateMenuItem(id, uri, type, query, ...)`,

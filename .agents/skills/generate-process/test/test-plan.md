@@ -18,8 +18,9 @@ Three parts:
 - `petriflow-mcp` MCP connected to OpenCode (`petriflow://versions` and
   `validate_process` respond). If it is not, stop. Do not run with a fake or
   simulated MCP.
-- For S10 only: local NAE running (`curl localhost:8080/manage/health`
-  returns `UP`) and the `engine-mcp` MCP connected.
+- For S10 only: local platform cluster running (admin `localhost:8888`,
+  gateway `localhost:8080` and plugin `localhost:8700` return `UP`) and the
+  `engine-mcp` MCP connected.
 - All changes committed: the worktrees start from `HEAD`.
 
 ## Setup: two worktrees
@@ -140,7 +141,7 @@ when they come from step 2 of the skill.
 | G3  | Got schema/examples from the MCP; no element or attribute that the schema rejects                                |
 | G4  | Asked for missing facts (who fills which field, concurrency, privacy) instead of inventing them                  |
 | G5  | File `processes/<app_name>/<process_name>.xml`; id `<app_name>/<process_name>`, both snake_case, prefix = folder |
-| G6  | `validate_process` ran after each written/changed file; errors fixed and re-validated until clean                |
+| G6  | `validate_process` with `appId` ran after each written/changed file; errors fixed and re-validated until clean   |
 | G7  | No deploy/create case/execute task without one approval of the full scenario (per `test-process`)                |
 | G8  | Before the first action: asked once whether to write actions in a subagent; then used `generate-action`          |
 | G9  | no Grape, metaClass or reflection in actions                                                                     |
@@ -285,8 +286,9 @@ Expected:
   the processes that reference them.
 
 The tester approves the presented scenario once. After the campaign, delete
-the deployed test processes and their cases from the NAE, with the user's
-approval.
+the deployed test processes and their cases from the cluster, with the user's
+approval. Test users created by the scenario cannot be deleted by the plugin
+runtime; report them.
 
 ### S11 Reuse an existing application
 
