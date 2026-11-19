@@ -3,8 +3,8 @@ name: write-plugin
 description: Builds, runs and wires custom Netgrif Platform plugins, standalone Spring Boot services registered with the admin node, whose entry points Petriflow actions call as Plugin.registrationName.entryPoint.method. Use when a requirement needs Java code, a Java library or a whole service that an action cannot provide (e.g. PDF generation, OCR, an external system integration or SDK), or when creating, changing, building, running or removing a plugin in plugins/. This is the default way to extend the platform; a module (write-module) only when a plugin cannot do it.
 compatibility: Requires Java 21, Maven 3+ and Docker with Compose; running it needs the local platform cluster from docker-compose.yaml (nae-admin and the root worker nae-engine).
 metadata:
-  tested: false
-  version: 0.1.0
+  tested: true
+  version: 0.2.0
 ---
 
 # Implement a Netgrif Platform plugin
@@ -104,6 +104,7 @@ improvising.
 
    | Key                                          | Env                                          | Local value          |
    |----------------------------------------------|----------------------------------------------|----------------------|
+   | `spring.profiles.active`                     | `SPRING_PROFILES_ACTIVE`                     | `service` (required) |
    | `netgrif.plugin.service.host`                | `NETGRIF_PLUGIN_SERVICE_HOST`                | `<artifactId>`       |
    | `netgrif.plugin.service.grpc.port`           | `NETGRIF_PLUGIN_SERVICE_GRPC_PORT`           | `97xx`               |
    | `netgrif.plugin.service.admin-node.host`     | `NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_HOST`     | `nae-admin`          |
@@ -111,6 +112,8 @@ improvising.
    | `netgrif.plugin.service.search.default-zone` | `NETGRIF_PLUGIN_SERVICE_SEARCH_DEFAULT_ZONE` | `z1` (default `private`) |
    | `server.port`                                | `SERVER_PORT`                                | `87xx`               |
 
+   The registration, the gRPC server and the action API of `plugin-client`
+   exist only in the `service` profile; the client defaults to `module`.
    `service.host` is the name the cluster calls the plugin by, so it must be
    the compose service name, never `localhost`. Own settings go under
    `netgrif.plugin.<registrationName>.*` with `@ConfigurationProperties`;
@@ -134,8 +137,12 @@ improvising.
    with Maven first, then the same command (it rebuilds the image).
 9. **Verify registration.** `engine-mcp` does not list plugins yet. Check:
    - `docker compose ps <artifactId>` shows `healthy`;
-   - `docker compose logs <artifactId>` shows the registration with the admin
-     and no gRPC errors;
+   - `docker compose logs <artifactId>` shows `The following 1 profile is
+     active: "service"`, `gRPC server started` and `Plugin with identifier
+     [<groupId>_<artifactId>_<apiVersion>] was successfully registered`
+     (dots and dashes become `_`), and no errors;
+   - `docker compose logs nae-admin` shows `NETGRIF Root Worker : Plugin with
+     identifier "<identifier>" was registered` (the worker knows the plugin);
    - the admin UI http://localhost:8888/cluster/plugins lists the plugin as
      RUNNING (ask the user to look, or use the browser panel).
 10. **Call it from a process.** In an action:
@@ -168,6 +175,9 @@ appears. Never use `git add -f`.
 
 - Choosing a module because "actions cannot call a plugin": they can, through
   `Plugin.<registrationName>`.
+- No `spring.profiles.active=service`: the plugin restarts in a loop with
+  `No qualifying bean of type '...adapter.spring.actions.ActionApi'`, or it
+  starts without registering.
 - Copying the web docs or the example's `application.properties`
   (`registration-server.*`, `admin-node.port`, `grpc.host`, `PLUGIN_URL`,
   `REGISTRATION_SERVER_*`): the plugin never registers.

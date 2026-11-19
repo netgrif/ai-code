@@ -227,12 +227,13 @@ public class GreetingService {
 
 ```properties
 spring.application.name=@project.artifactId@
+spring.profiles.active=service
 server.port=${SERVER_PORT:8701}
 netgrif.plugin.service.grpc.port=${NETGRIF_PLUGIN_SERVICE_GRPC_PORT:9701}
 netgrif.plugin.service.search.default-zone=${NETGRIF_PLUGIN_SERVICE_SEARCH_DEFAULT_ZONE:z1}
 ```
 
-The other plugin keys (`netgrif.plugin.service.host`, `admin-node.*`) come from the `application.yaml` inside `plugin-client` and are set by env variables in `compose.yaml`. `@project.artifactId@` works because the pom filters resources.
+`spring.profiles.active=service` is required: the registration, the gRPC server and `ActionApiImpl` in `plugin-client` exist only in the `service` profile, and the client's own `application.yaml` defaults to the `module` profile. The other plugin keys (`netgrif.plugin.service.host`, `admin-node.*`) come from the `application.yaml` inside `plugin-client` and are set by env variables in `compose.yaml`. `@project.artifactId@` works because the pom filters resources.
 
 ## `src/test/java/com/example/hello/GreetingServiceTest.java`
 
