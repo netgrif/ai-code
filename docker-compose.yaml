@@ -123,7 +123,7 @@ services:
     depends_on:
       nae-admin:
         condition: service_healthy
-      engine:
+      nae-engine:
         condition: service_healthy
       nae-redis:
         condition: service_started
@@ -132,7 +132,46 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  engine:
+  nae-search:
+    image: docker.nexus.netgrif.com/netgrif-search:1.1.0
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8600/manage/health | grep UP" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    environment:
+      netgrif.search.node.rest-port: 8600
+      netgrif.search.node.grpc.port: 9600
+      NETGRIF_SEARCH_DATA_ELASTIC_URL: nae-elasticsearch
+      NETGRIF_SEARCH_DATA_REDIS_HOST: nae-redis
+      NETGRIF_SEARCH_NODE_ADMIN_NODE_HOST: nae-admin
+      NETGRIF_SEARCH_NODE_IN_CLOUD: false
+      NETGRIF_SEARCH_NODE_HOST: nae-search
+      netgrif.engine.data.redis.namespace: netgrif
+      netgrif.search.node.zone: z1
+      otel.sdk.disabled: 'true'
+      otel.traces.exporter: none
+      otel.metrics.exporter: none
+      otel.logs.exporter: none
+    ports:
+      - "8600:8600"
+      - "9600:9600"
+    depends_on:
+      nae-admin:
+        condition: service_healthy
+      nae-elasticsearch:
+        condition: service_started
+      nae-redis:
+        condition: service_started
+      nae-engine:
+        condition: service_healthy
+    networks:
+      - netgrif-platformnet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nae-engine:
     # Root worker of the cluster. The MCP server is a separate plugin service.
     image: docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0
     restart: unless-stopped
@@ -149,7 +188,7 @@ services:
       NETGRIF_ENGINE_DATA_ELASTIC_URL: nae-elasticsearch
       NETGRIF_ENGINE_DATA_REDIS_HOST: nae-redis
       NETGRIF_WORKER_NODE_NAME: NETGRIF Root Worker
-      NETGRIF_WORKER_NODE_HOST: engine
+      NETGRIF_WORKER_NODE_HOST: nae-engine
       NETGRIF_WORKER_NODE_NODE_TYPE: ENGINE_ROOT
       netgrif.engine.data.redis.namespace: netgrif
       NETGRIF_WORKER_NODE_ADMIN_NODE_HOST: nae-admin
@@ -220,7 +259,7 @@ services:
     depends_on:
       nae-admin:
         condition: service_healthy
-      engine:
+      nae-engine:
         condition: service_healthy
     networks:
       - netgrif-platformnet

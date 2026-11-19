@@ -46,4 +46,4 @@ Then create a case from the process and work through its tasks.
 - Keep the application `README.md` up to date when you add or change a process.
 - Validate every change, for example with the Petriflow MCP tool `validate_process` and the application name as `appId`.
 - Keep actions short and use the Petriflow Action API. Logic that does not fit in a process belongs in a
-  [module](../modules/README.md).
+  [plugin](../plugins/README.md), or in a [module](../modules/README.md) only when a plugin cannot do it.

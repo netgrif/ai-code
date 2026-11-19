@@ -26,7 +26,7 @@ validated.
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
 - `validate_process` with `appId` after every change to a process file, until
-  clean. Petriflow 1.1.1 requires the root id to be `<appId>/<processId>` when
+  clean. Petriflow MCP 1.1.1 requires the root id to be `<appId>/<processId>` when
   `appId` is set.
 - Two versions, do not mix them up: the *Petriflow version* is the language
   version from `list_versions`; the *process version* is the `<version>`

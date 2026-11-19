@@ -11,11 +11,12 @@ Reply in the language the user writes in.
 
 | Path                    | Purpose                                                                                                                      |
 |-------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `docker-compose.yaml`   | Local platform cluster: `nae-admin` (:8888), `nae-gateway` (:8080, :8800), root worker `engine` (:8082), `frontend` (:4200), `builder` (:4300), `petriflow-mcp` (:3000), `nae-mcp-plugin` (:8700), MongoDB, Elasticsearch, Redis |
+| `docker-compose.yaml`   | Local platform cluster: `nae-admin` (:8888), `nae-gateway` (:8080, :8800), root worker `nae-engine` (:8082), search node `nae-search` (:8600), `frontend` (:4200), `builder` (:4300), `petriflow-mcp` (:3000), `nae-mcp-plugin` (:8700), MongoDB, Elasticsearch, Redis; your plugins via `include:` |
 | `nae/engine/modules/`   | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                             |
 | `nae/engine/logs/`      | NAE logs (mounted from the container), including `nae.log`                                                                   |
 | `nae/engine/storage/`   | NAE storage (mounted from the container)                                                                                     |
 | `processes/<app_name>/` | One folder per application: Petriflow process XMLs and a `README.md`. Shared live with the builder (read-write)              |
+| `plugins/<artifactId>/` | Plugin sources, one Maven project per plugin, with its `Dockerfile` and `compose.yaml`                                       |
 | `modules/<artifactId>/` | Java/Spring module sources, one Maven project per module                                                                     |
 | `.agents/skills/`       | Task playbooks for agents (see below)                                                                                        |
 | `.mcp.json`             | MCP servers: `petriflow-mcp` (:3000) and `engine-mcp` (cluster plugin, :8700; needs the running cluster)                    |
@@ -27,8 +28,14 @@ Choose the first option that works. Move down only when the one above cannot do 
 
 1. **Petriflow process** (data, transitions, roles, actions, forms). Default for all
    app logic. The application menu is also a process (`generate-menu-import`).
-2. **Module**, only if the logic cannot be a process or action (a whole service,
-   e.g. OCR). Use the `write-module` skill.
+2. **Plugin**, when the logic needs Java code, a Java library or a whole service
+   that an action cannot provide (e.g. PDF generation, OCR, an external system
+   integration). Actions call it as
+   `Plugin.<registrationName>.<entryPoint>.<method>(args)`. Use the
+   `write-plugin` skill. This is the default way to extend the platform.
+3. **Module**, only when a plugin cannot do it: the code must call another
+   plugin or a module, use engine internals that `PluginActionApi` does not
+   expose, or run inside the worker's own call. Use the `write-module` skill.
 
 Explain to the user why you moved down a level before doing it.
 
@@ -44,7 +51,8 @@ Load the matching skill before the task:
 - `generate-action`: write Groovy action code inside a process.
 - `generate-menu-import`: menu import process (menu items, folders, views).
 - `test-process`: validate a process and run it on the local NAE.
-- `write-module`: custom NAE module (Java/Spring).
+- `write-plugin`: custom platform plugin (Java/Spring service called from actions).
+- `write-module`: custom NAE module (Java/Spring), only when a plugin cannot do it.
 
 Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
 inside the Markdown. Keep `name` equal to the folder name, and no `<` or `>` in
@@ -56,7 +64,9 @@ the frontmatter.
   `localhost:3000` (image 1.1.1). Use it to validate (`validate_process` with
   `appId`, `validate_action`), to look up Petriflow versions, components and the
   Action API, and to generate an application manifest (`generate_app_manifest`).
-  Never write Petriflow or Action API syntax from memory.
+  Never write Petriflow or Action API syntax from memory. Two separate versions:
+  1.1.1 is the MCP server (image); the Petriflow language has its own version
+  (e.g. 1.0.9), which you read from the MCP and pass to `validate_process`.
 - `engine-mcp` is the cluster MCP plugin `nae-mcp-plugin`, on
   `localhost:8700`. It needs the running cluster (admin, root worker and plugin).
   If it is not reachable, say so and stop. Do not fake results.
@@ -65,22 +75,24 @@ the frontmatter.
 
 ## Project setup
 
-Prerequisites: Docker with Compose, and (only when developing modules) Java 21 and
-Maven. The platform images are in `docker.nexus.netgrif.com`, so log in first:
+Prerequisites: Docker with Compose, and (only when developing plugins or modules)
+Java 21 and Maven 3+. The platform images are in `docker.nexus.netgrif.com`, so log in first:
 `docker login docker.nexus.netgrif.com`. **Warn the developer** that developing a
-module requires Java 21 and Maven installed; if they are missing, say so and stop
-before module work.
+plugin or module requires Java 21 and Maven 3+ installed; if they are missing, say so
+and stop before plugin or module work.
 
 1. Start the cluster from the repository root: `docker compose up -d`
    (Docker Compose v2). It starts the platform admin, gateway, root worker,
-   frontend, builder, Petriflow MCP, the MCP plugin and the databases. A short
-   `init-perms` job fixes the owner of `nae/engine/logs` and `storage` first.
-   The gateway waits for a healthy admin and root worker; the frontend waits for
-   the gateway; the plugin waits for the admin and root worker.
+   search node, frontend, builder, Petriflow MCP, the MCP plugin and the
+   databases. A short `init-perms` job fixes the owner of `nae/engine/logs` and
+   `storage` first. The gateway waits for a healthy admin and root worker; the
+   search node waits for the admin and root worker; the frontend waits for the
+   gateway; the plugin waits for the admin and root worker.
 2. Wait until the cluster is healthy (no authentication needed). If not, read
    `nae/engine/logs/nae.log` and the container logs.
    - `curl http://localhost:8888/manage/health` — admin.
    - `curl http://localhost:8080/manage/health` — gateway (the browser entry point).
+   - `curl http://localhost:8600/manage/health` — search node.
    - `curl http://localhost:8700/manage/health` — MCP plugin.
    - `curl http://localhost:8082/manage/health` — root worker (debug only).
 3. Open the frontend at http://localhost:4200 and log in as `admin`. Its
@@ -102,7 +114,8 @@ before module work.
 approval first: deploying a process, uploading or deploying an application
 package (`upload_application`, `deploy_application`), creating a case,
 executing a task, creating or deleting users, assigning roles,
-copying/removing a module, restarting or recreating containers. Read-only
+copying/removing a module, adding/removing a plugin in `include:`, building or
+starting plugin images, restarting or recreating containers. Read-only
 calls (validate, list) don't. Never delete
 Docker volumes or data.
 
@@ -133,7 +146,7 @@ then implement `delete_user` in the plugin. This is tracked in `TODOs.md`.
   `<app_name>/<process_name>` (e.g. `hello_world/hello_world`), unique across
   the whole NAE deployment. The file is `processes/<app_name>/<process_name>.xml`.
 - Use the latest Petriflow version from the Petriflow MCP unless pinned.
-- Pass `appId` (`<app_name>`) to `validate_process`; Petriflow 1.1.1 enforces
+- Pass `appId` (`<app_name>`) to `validate_process`; Petriflow MCP 1.1.1 enforces
   that the root process id is `<appId>/<processId>`.
 - The user can edit the same files in the builder. Before you edit or deploy a
   process file, compare `git hash-object <file>` (first 8 characters) with the
@@ -145,16 +158,29 @@ then implement `delete_user` in the plugin. This is tracked in `TODOs.md`.
 - Actions are validated with `validate_action` (Petriflow MCP 1.1.1) before the
   process is validated. Actions are short, use Action API methods, one concern each. Never use Grape,
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
-  function. Whole services become modules.
+  function. Java libraries and whole services become plugins.
 
 **NAE data folders.** `nae/engine/logs` and `nae/engine/storage` belong to the
 engine container (owned by its user). Read logs from there, never write there.
+
+**Plugins.**
+
+- Sources in `plugins/<artifactId>/`: Spring Boot 4.1, `plugin-client` 1.1.0,
+  `nae-plugin-maven-plugin` 1.0.2, built with
+  `mvn -f plugins/<artifactId>/pom.xml clean package`. Each plugin has its own
+  `compose.yaml`, listed under `include:` in the root `docker-compose.yaml`;
+  run it with `docker compose up -d --build <artifactId>` from the repository root.
+- Actions call a plugin as `Plugin.<registrationName>.<entryPoint>.<method>(args)`.
+  The web docs and the example plugin's properties are outdated; follow the
+  `write-plugin` skill. A plugin cannot call another plugin or a module.
+- `engine-mcp` does not list plugins yet; check `docker compose ps`, the
+  plugin's logs and the admin UI (`/cluster/plugins`).
 
 **Modules.**
 
 - Sources in `modules/<artifactId>/`, built with `nae-module-maven-plugin`
   against NAE `7.1.0`, ZIP unzipped into `nae/engine/modules/<artifactId>/`,
-  then restart the root worker (`docker compose restart engine` in the
+  then restart the root worker (`docker compose restart nae-engine` in the
   repository root). Modules load into a worker, so with more workers every
   worker that needs the module must have it.
 - Actions call a module as `NaeModule.<group>.<serviceBeanName>.<method>(args)`. `petriflow-mcp` validates the process
@@ -204,8 +230,9 @@ A change is done only when the relevant checks pass and you have seen the output
 
 | Change           | Check                                                                                                             |
 |------------------|-------------------------------------------------------------------------------------------------------------------|
-| Cluster config   | `docker compose config`; admin (:8888), gateway (:8080) and plugin (:8700) health return `UP`; `list_nodes` returns `NETGRIF Admin`, `NETGRIF Root Worker` and `Netgrif Gateway`, all RUNNING |
+| Cluster config   | `docker compose config`; admin (:8888), gateway (:8080), search node (:8600) and plugin (:8700) health return `UP`; `list_nodes` returns `NETGRIF Admin`, `NETGRIF Root Worker` and `Netgrif Gateway`, all RUNNING |
 | Process / action | `validate_process` (with `appId`) and `validate_action`, then a live scenario with the `test-process` skill       |
+| Plugin           | `mvn -f plugins/<artifactId>/pom.xml clean package` (entry points found), `docker compose config --quiet`, run with approval, container `healthy` and registered, call it from an action |
 | Module           | `mvn -f modules/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |
 
 Report what was run and the results. If a check cannot run (NAE or MCP down),

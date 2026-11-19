@@ -33,7 +33,7 @@ Redeploying while iterating).
    Use the latest, unless the user or project pins another.
 3. Call `validate_process` with that version, the raw XML and `appId` (the
    application folder name; check the tool schema for exact verbatim parameter
-   names). Petriflow 1.1.1 requires the process id to be `<appId>/<processId>`
+   names). Petriflow MCP 1.1.1 requires the process id to be `<appId>/<processId>`
    when `appId` is set.
 4. For every returned issue: quote it, locate the element in the XML, and
    propose a concrete fix as a diff. Group related issues.

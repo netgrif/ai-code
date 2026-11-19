@@ -1,7 +1,7 @@
 ---
 name: write-module
-description: Builds, packages and deploys custom NAE modules, Spring Boot code loaded into the Application Engine, whose services Petriflow actions call as NaeModule.group.bean.method. Use when creating, changing, building or deploying a module in modules/, or when a Petriflow action needs Java functionality or a whole service that cannot be a process or action (e.g. OCR, an external system integration). Not for logic that fits in an action (use generate-action).
-compatibility: Requires Java 21, Maven and Docker with Compose; deploying needs the local platform cluster from docker-compose.yaml (root worker `engine`).
+description: Builds, packages and deploys custom NAE modules, Spring Boot code loaded into the Application Engine worker, whose services Petriflow actions call as NaeModule.group.bean.method. Use when creating, changing, building or deploying a module in modules/, or when Java code must run inside the worker because a plugin cannot do it (it must call another plugin or a module, use engine internals that PluginActionApi does not expose, or run in the worker's own call). For Java functionality or a whole service called from actions use write-plugin first; for logic that fits in an action use generate-action.
+compatibility: Requires Java 21, Maven and Docker with Compose; deploying needs the local platform cluster from docker-compose.yaml (root worker `nae-engine`).
 metadata:
   tested: false
   version: 0.4.0
@@ -23,6 +23,13 @@ which the compose file mounts into the root worker container. In a cluster a
 module runs inside one worker, so every worker that needs it must have it. A
 module cannot be changed at runtime: every change needs an engine restart.
 Reference: https://platform.netgrif.cloud/ecosystem/modules/custom-module
+
+**Plugin first.** Extending the platform with Java is done with a plugin
+(`write-plugin`): it runs as its own service, brings its own libraries and
+needs no engine restart. Use a module only when a plugin cannot do it, and
+tell the user which reason applies: the code must call another plugin or a
+module, use engine internals that `PluginActionApi` does not expose, or run
+inside the worker's own call.
 
 **Approval rule:** writing sources and running `mvn` need no approval. Removing
 or unzipping into `nae/engine/modules/` and restarting the container change
@@ -88,8 +95,8 @@ the local instance and need user approval first.
    replaced, and the restart command. After approval: delete
    `nae/engine/modules/<artifactId>/`, unzip the ZIP into it (jar and
    `libs/` directly inside), run
-   `docker compose restart engine` (in the repository root), then check
-   `docker compose logs engine` for load errors.
+   `docker compose restart nae-engine` (in the repository root), then check
+   `docker compose logs nae-engine` for load errors.
    NAE scans the folder recursively. With more workers, put the module into
    every worker that needs it.
 9. **Use in Petriflow:** call from an action as
