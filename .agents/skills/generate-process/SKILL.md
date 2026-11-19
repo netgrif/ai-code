@@ -1,22 +1,49 @@
 ---
 name: generate-process
-description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to create a new application in processes/, or to split an application into several processes. Not for writing a single action's Groovy code (use generate-action), for the application menu (use generate-menu-import) or for only validating or deploying a process (use test-process).
+description: Designs and writes Petriflow process XML for the Netgrif Application Engine (NAE), as one process or a set of cooperating processes, from a business requirement. Use when the user asks to create, model, design or change a workflow, business process, approval flow, Petri net or Petriflow process (processes/*.xml), to design the processes of an app on Netgrif, to create a new application in processes/, or to split an application into several processes. Load it before or together with any general design or planning skill (brainstorming, writing plans), because the architecture of a Netgrif app follows this skill. Not for writing a single action's Groovy code, even when no process exists yet (use generate-action and ask which process the action belongs to), for the application menu (use generate-menu-import) or for only validating or deploying a process (use test-process).
 compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need the local platform cluster with the engine-mcp plugin (http://localhost:8700/mcp).
 metadata:
   tested: false
   mcp-server: petriflow-mcp
-  version: 0.6.0
+  version: 0.8.0
 ---
 
 # Generate Petriflow Process
 
 ## Overview
 
-On Netgrif the model is the implementation: a Petriflow process (a *class*)
-declares data, roles, actions and a Petri net (its *lifecycle*); its runtime
-instances are *cases*. An application is often a network of processes, not one
-net. This skill turns a requirement into the right set of processes, each
-validated.
+On Netgrif the model is the implementation: a Petriflow process (a
+*process-centric class*, PCC) declares data, roles, forms, actions and a Petri
+net (its *lifecycle*); its runtime instances are *cases* (process-centric
+objects). An application is often a network of processes, not one net. This
+skill turns a requirement into the right set of processes, each validated.
+Model where possible, actions where needed.
+
+**Together with other workflows.** When a general design or planning workflow
+is active (brainstorming, writing plans, a design document), this skill still
+owns the architecture of the Netgrif application: load it first, apply steps
+3 and 5 to the requirement, and write any design document or plan from the
+architecture that passed those steps. A design that contradicts M1–M4 (for
+example one process in which tutors rank in turn, or one transition per
+reviewer when the number of reviewers can change) is not a valid result of
+the other workflow either.
+
+## Rules no request overrides
+
+These rules come from `AGENTS.md`, the project owner's standing instruction.
+A chat request to hurry, skip, or "just give me the XML", and the general rule
+that user instructions take precedence, do not lift them. A request to hurry
+changes how long each step is, never whether it happens.
+
+| The request says                                          | Do this instead                                                                                           |
+|-----------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| "Keep it quick", "just give me the XML"                   | Present the architecture in one short block and **end the turn**. No XML and no files before the user answers. |
+| "Skip validation", "I will upload it myself"              | Run `validate_process` anyway; it is the definition of done. Say what it returned.                        |
+| "The MCP is slow", "you know Petriflow", "use that version" | Ask the MCP for the version and schema. If it is unreachable, say so and stop: no XML from memory, no schema downloaded elsewhere. |
+| "Design it" or "build it" (nothing about the live system)  | That is not approval to deploy, create cases or users, or run tasks on the NAE. Ask first, once, with the full scenario (`test-process`). |
+
+If you cannot follow a rule, stop and say which one and why. Do not pick the
+shortcut and report it afterwards.
 
 ## Critical rules
 
@@ -51,7 +78,7 @@ validated.
       `<component><name>` value.
     - List the MCP resources and resource templates; read the schema and the
       examples for that version that match the problem (e.g. arcs, roles,
-      caseRef, taskRef, user lists).
+      caseRef, taskRef, actor lists).
 3. **Read the existing applications, then analyse the requirement.**
     - List `processes/*/` and read each application's `README.md`. Note the
       existing process ids, roles (especially the global ones, see Global
@@ -66,21 +93,46 @@ validated.
       which data outlives one run, and which fields users search by or want
       as columns of a case list (see Indexed fields). Ask the user for any of
       these that the requirement does not state.
-4. **Make every transition atomic.** A transition is either one user filling
-   one form, or a system transition with no user (P8). Split steps until this
-   holds. The result is the *flat model*.
-5. **Decide the architecture** with the tables below. Then present it to the
-   user: each process (full id, application, kind, purpose), its roles (each
-   marked global or local with one reason, see Global roles),
-   channels (sender transition → receiver system transition), caseRef/taskRef
-   links, dependencies on processes of other applications, the indexed
+    - **A named number is not a fixed number.** When the requirement says
+      "five reviewers", "ten slots" or "two approvers", ask whether it can
+      differ per case or per semester, with the answer options "always this
+      many" and "changes". Do not decide it yourself. "Changes" means M2: one
+      case per element. "Always this many" is accepted and recorded as a
+      deviation with its trade-off (a change of the number is a change of the
+      process).
+4. **Make every transition atomic (M1 Static atomicity).** A user transition
+   is exactly one user filling one form; everything else is a system
+   transition with no user. Split steps until this holds, including
+   subactivities that need different forms (first submission and revision,
+   automatic and manual distribution). Do not plan actions that adapt one form
+   to the user or the phase. The result is the *flat model*.
+5. **Decide the architecture**, in this order (details in
+   `references/modeling-principles.md`):
+    1. **M2 Dynamic atomicity:** every branch or transition whose count is
+       runtime data (per user, item, slot) becomes its own process with one
+       case per element.
+    2. **M3 Cohesion:** where a process's access graph splits, ask who
+       requests changes to each part. Cut only for different change drivers,
+       and join the parts by caseRef.
+    3. **M4 Object communication:** connect the cases only by creating cases,
+       channels to system transitions, caseRefs (reading) and taskRefs to
+       system transitions; never by writing foreign fields or firing foreign
+       user tasks.
+    4. Check the result against the Architecture decision table below.
+
+   Then present it to the user: each process (full id, application, kind,
+   purpose), its roles (each marked global or local with one reason, see
+   Global roles), channels (sender user transition → receiver system
+   transition), caseRef links, taskRef links with the embedded system
+   transition, dependencies on processes of other applications, the indexed
    fields (`immediate="true"`) of each process with one reason each (search,
    case list column, or Elasticsearch query), and file paths
-   `processes/<app_name>/<process_name>.xml`. **Write no XML until the user approves the architecture.** A single
-   process
-   still goes through this gate (one short line is enough). State the process
-   version of each process in it: `1.0.0` for new ones, old → new for changed
-   ones (rule in Critical rules).
+   `processes/<app_name>/<process_name>.xml`. **Write no XML until the user
+   approves the architecture, and end your turn after presenting it.** The
+   presentation and the XML never share a turn. A single process still goes
+   through this gate (one short line is enough, see "Rules no request
+   overrides"). State the process version of each process in it: `1.0.0` for
+   new ones, old → new for changed ones (rule in Critical rules).
 6. **Write the XML**, data-centric processes first, then the processes that
    reference them. Follow the schema and the naming rules below. Per process:
    places, transitions, arcs, roles and permissions, data, forms (data groups,
@@ -90,7 +142,10 @@ validated.
    embedding: see Quick reference. Set `<version>` by the rule in Critical
    rules.
 7. **Actions.** Before the first action, ask the user once per session:
-   "Should the actions be written by a subagent, or inline here?" Then, for
+   "Should the actions be written by a subagent, or inline here?" The question
+   is mandatory, also for one short action; do not answer it yourself. When
+   the architecture contains actions, put the question into the architecture
+   message (step 5) so that it costs no extra turn. Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
    pass: process file path, event and phase, what the action must do, and the
    ids of fields/transitions/processes it uses.
@@ -101,12 +156,12 @@ validated.
       approval. Deploy referenced processes before the ones that reference them,
       also across applications. Redeploys while iterating use `replaceExisting`
       and leave the process version unchanged (see `test-process`). When the
-      process has role permissions or user bindings, Stage 2 includes role
+      process has role permissions or `actorRef` bindings, Stage 2 includes role
       scenarios with impersonated test users. Every scenario cleans up its test
       cases and users; the processes stay deployed.
 9. **Review** against the checklist in `references/modeling-principles.md`
    (it includes the indexed fields). Fix violations or list them with a
-   reason. Per-user visibility (P9) is
+   reason. Per-user visibility (R6) is
    verified by the role scenarios of `test-process`, not by reading the XML.
 10. **Application README.** Create or update `processes/<app_name>/README.md`
     for every application you touched (template below), including the process
@@ -120,26 +175,33 @@ validated.
 Before step 4, when the requirement has more than one actor or more than one
 entity, read `references/modeling-principles.md`. It contains:
 
-- Petriflow vocabulary (arc kinds, caseRef, taskRef, channel, system transition)
-- the nine modeling principles P1–P9 with C1–C5 and A1–A3, as checks
-- Prop. 1 (arc weights vs. runtime case counts) and Prop. 2 (one case per user)
-- structural patterns: CRUD template, channel, counter, per-user case
-- a worked decomposition (tutor assignment) and the review checklist
+- Petriflow vocabulary (PCC, PCO, lifecycle, user and system transition, arc
+  kinds, caseRef, taskRef, channel)
+- the four core principles M1 Static atomicity, M2 Dynamic atomicity,
+  M3 Cohesion, M4 Object communication (coupling levels U1–U6, channels)
+- the complementary rules R1–R6 (interface, one owner, class categories,
+  communication checks C1–C5, completion A2–A3, role-bounded visibility) and
+  Prop. 1 (arc weights vs. runtime case counts)
+- structural patterns: CRUD template with its `form` system transition,
+  channel, counter, per-user case, embedded editing
+- the tutor assignment derived step by step, and the review checklist
 
 ## Architecture decision
 
-| Signal in the requirement                                                | Model it as                                                                |
-|--------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| One flow, a fixed set of forms, roles separate users well enough         | One process                                                                |
-| n users act in parallel, each on their own form, n known only at runtime | One process per user (case per user), created by the coordinator (Prop. 2) |
-| Users with the same role must not see each other's data                  | Separate cases bound to their user (user list), not roles alone (P9)       |
-| A role meaningful beyond one process (several processes, apps, the menu) | Global role (`global="true"`), see Global roles                            |
-| An entity that lives longer than one run (room, customer, contract)      | Data-centric process on the CRUD template (P6)                             |
-| Groups of transitions that share no data field                           | Separate processes joined by channels (P1, P2)                             |
-| The same form needed in several processes                                | Define it once, embed it with taskRef (P5)                                 |
-| A whole service (OCR, external system)                                   | Module (`write-module`), not a process                                     |
+| Signal in the requirement                                                     | Model it as                                                                                |
+|-------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| One flow, a fixed set of forms, roles separate users well enough              | One process                                                                                |
+| One activity done by different users, or in phases with different forms       | One transition per user and per subactivity (M1)                                           |
+| Work whose count is runtime data (users, items, slots), e.g. n users each on their own form | One process for the repeated work, one case per element, created by the coordinator (M2) |
+| Users with the same role must not see each other's data                       | Separate cases bound to their user (`actorRef`), not roles alone (R6)                      |
+| A role meaningful beyond one process (several processes, apps, the menu)      | Global role (`global="true"`), see Global roles                                            |
+| An entity that lives longer than one run (room, customer, contract)           | Data-centric process on the CRUD template (R3)                                             |
+| Groups of transitions that share no data field                                | A sign only: ask who requests changes; for different change drivers separate processes joined by caseRef (M3) |
+| One case must react when a user finishes a task in another case              | Channel: sender user transition → receiver system transition (M4)                          |
+| The same form needed in several processes                                     | Define it once as a system transition of its owner, embed it with taskRef (R2, U6)         |
+| A whole service (OCR, external system)                                        | Plugin (`write-plugin`), not a process                                                     |
 
-Every cut costs a channel. Cut only when a row above applies.
+Every cut costs a caseRef or a channel. Cut only when a row above applies.
 
 ## Applications and naming
 
@@ -157,12 +219,12 @@ reference each other, regardless of application.
 
 Which application:
 
-- Add to an existing application when the process serves its business area (same change driver, P1).
+- Add to an existing application when the process serves its business area (same change driver, M3).
 - Create a new application for a separate business area with its own change
   driver. Ask the user for the application name if it is not obvious.
 - An entity shared by several applications (e.g. a customer) lives once, in the
-  application that owns it; others reference it (P5). Treat cross-application
-  references as an interface (P3, P4) and list them in the README.
+  application that owns it; others reference it (R2). Treat cross-application
+  references as an interface (R1, M4) and list them in the README.
 
 Application README template (keep it this short):
 
@@ -222,7 +284,7 @@ flowchart LR
 1. <process ids, referenced processes first>
 ````
 
-Kind is `data-centric`, `process-centric` (P6) or `standalone` (a process with
+Kind is `data-centric`, `process-centric` (R3) or `standalone` (a process with
 no links to other cases).
 
 Hash is the first 8 characters of `git hash-object processes/<app_name>/<file>`.
@@ -361,16 +423,25 @@ Rules:
 | Validate              | `test-process` skill (`validate_process` with `appId`) |
 | Application manifest  | `generate_app_manifest` (cluster package)              |
 
-- **Channel:** an action of the sender navigates one caseRef field and fires a *system transition* in the referenced
-  case. A system transition has no role
-  permission and no user binding; check that default/anonymous roles do not
-  grant it either.
+- **Channel:** in the finish event (post phase) of a *user* transition, an
+  action navigates one caseRef field of that transition's access set and, for
+  each referenced case, fires a *system transition* only if it is enabled. The
+  channel carries no data: the receiver reads the sender through a caseRef. A
+  receiver does not send further channels.
+- **System transition:** no role permission and no `actorRef`. A transition
+  without them is open to the built-in `default` and `anonymous` roles, which
+  are on by default, so set `<defaultRole>` and `<anonymousRole>` so they do
+  not grant it.
+- **Never across cases:** write fields of another case after creating it, fire
+  its user transitions, or read its marking (M4). Initial values and caseRefs
+  are passed when the case is created.
 - **Counter pattern:** the coordinator waits for n per-user cases with a
   variable arc (weight = data field). The field must equal the number of cases
   actually created (Prop. 1). A skip path empties the counting places with
   reset arcs.
 - **CRUD template:** `create` → places A, B; `update` loops on A; `read` on a
-  read arc to B; `delete` consumes A and B.
+  read arc to B; `delete` consumes A and B; `form` is a system transition on a
+  read arc to B that other processes embed by taskRef.
 
 ## Examples
 
@@ -387,12 +458,16 @@ Result: one validated process, the application README and a report.
 **Example 2: decomposition.**
 User says: "Every tutor ranks every session slot privately, then an algorithm
 assigns tutors and the associate corrects the result."
-Actions: the number of tutors is runtime data and rankings are private (Prop. 2, P9) → propose application
-`tutor_assignment` with a coordinating
-process, one process per tutor bound to its user, and data-centric processes (slot, tutor, priority), e.g.
-`tutor_assignment/tutor_priorities` → user
-approves → data-centric XML first, then the coordinator and the per-tutor
-process → actions via `generate-action` → validate each file → README.
+Actions: M1 splits ranking into `assign_priority` and `reassign_priority`, and
+the distribution into automatic and manual → the number of tutors is runtime
+data and rankings are private (M2, R6) → personal data and priorities have
+different change drivers (M3) → propose application `tutor_assignment` with a
+coordinating process, one process per tutor bound to its user, and
+data-centric processes (slot, tutor, priority) joined by caseRef, with the
+channels `counter` and `finish` (M4), e.g. `tutor_assignment/tutor_priorities`
+→ user approves → data-centric XML first, then the coordinator and the
+per-tutor process → actions via `generate-action` → validate each file →
+README.
 Result: several validated processes with channels; see the worked example in
 `references/modeling-principles.md`.
 
@@ -443,18 +518,45 @@ ids); the indexed fields (`immediate="true"`) per process with the reason,
 and candidates left out; the roles, global or local with the reason; files written, including application READMEs; per file the
 `validate_process` result (issues → fixes → clean); actions written;
 Stage 2 result (including replaced processes and the role scenario matrix) or
-why it did not run; principle
-deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
+why it did not run; the principle review as one line (M1–M4 and R1–R6, each
+"holds" or a deviation with its reason, from step 9); then the "Try it now"
+hand-off block from `AGENTS.md`.
 
 ## Common mistakes
 
-- Writing XML before the user approved the architecture.
+- Writing XML before the user approved the architecture, or presenting the
+  architecture and writing the XML in the same turn because the user asked to
+  hurry.
+- Skipping `validate_process`, or downloading a schema or XSD elsewhere,
+  because the user said to skip it or the MCP is slow.
+- Deploying, creating cases or users, or executing tasks on the NAE to "check
+  the work" without the approval `test-process` requires. Test users cannot be
+  deleted afterwards, and a deleted process whose roles users hold may refuse
+  to delete.
+- Writing a design document or plan (brainstorming, writing plans) whose
+  architecture was not run through steps 3 and 5 of this skill.
+- Deciding that a number named in the requirement is fixed ("five reviewers")
+  instead of asking whether it changes.
+- Creating a new process only to hold a requested action, instead of asking
+  which process the action belongs to.
 - Hardcoding a Petriflow version or copying the version/syntax of an old process.
 - One process with a copied transition per user (`approve_user_1..n`) when the
-  number of users is runtime data.
+  number of users is runtime data (M2).
+- One transition whose form, title or roles actions adapt per user or per
+  phase, or one transition for both first submission and revision (M1).
 - Privacy through one shared role plus "users promise not to look".
-- An action that fires a user task or writes foreign fields that arcs depend
-  on, instead of firing a system transition (channel).
+- An action that fires a user task of another case (U3), or writes any field
+  of another case after creating it (U2), instead of a channel to a system
+  transition whose action reads the sender.
+- A channel sent from a system transition (cascade) or from an assign or pre
+  event, or one that fires a receiver without checking it is enabled.
+- A taskRef that embeds a user transition of another case instead of its
+  `form` system transition.
+- Cutting a process only because its access graph splits, without asking
+  about change drivers; or joining cut processes by a channel where a caseRef
+  is enough (M3).
+- Routing, waiting or permissions written in actions that arcs, places and
+  roles could express.
 - A variable arc whose weight is not tied to the number of cases created.
 - An action touching two or more other cases without failure handling (A3).
 - A data-centric process whose actions create, delete or call other cases.

@@ -54,6 +54,11 @@ Load the matching skill before the task:
 - `write-plugin`: custom platform plugin (Java/Spring service called from actions).
 - `write-module`: custom NAE module (Java/Spring), only when a plugin cannot do it.
 
+For any design or change of Petriflow processes, load `generate-process` first,
+before brainstorming or any planning skill. Its architecture steps decide which
+processes exist; a design document or plan is written from that architecture,
+not the other way round.
+
 Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
 inside the Markdown. Keep `name` equal to the folder name, and no `<` or `>` in
 the frontmatter.

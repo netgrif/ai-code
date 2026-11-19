@@ -1,7 +1,7 @@
 # Role and permission scenarios
 
 Read this when the process has role permissions (roles on transitions or data
-fields) or user-bound fields, or when who may see a case matters (P9 in
+fields) or user-bound fields, or when who may see a case matters (R6 in
 `generate-process`). It extends Stage 2 of `test-process`: the same approval,
 redeploy rules and report, but every step runs as the user who is supposed to do
 it. It tests the process, not the engine-mcp mechanism itself.
