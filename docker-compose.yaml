@@ -10,26 +10,27 @@
 # default), so either configuration reaches the cluster.
 
 x-admin-password: &admin-password password
+x-cluster-zone: &cluster-zone local-zone
 
 services:
 
   petriflow-mcp:
-    image: netgrif/petriflow-mcp:1.1.1
+    image: netgrif/petriflow-mcp:1.1.2
     environment:
       PETRIFLOW_MODE: LOCAL
     ports:
       - "3000:3000"
 
   builder:
-    image: netgrif/application-builder:2.1.1-rc.3
+    image: netgrif/application-builder:2.1.1-local
     ports:
-      - "127.0.0.1:4300:80"
+      - "127.0.0.1:4300:8080"
     environment:
       PROCESS_FILES_ENABLED: "true"
       PUID: "${PUID:-}"
       PGID: "${PGID:-}"
     healthcheck:
-      test: [ "CMD", "curl", "-sf", "http://localhost:80/" ]
+      test: [ "CMD", "curl", "-sf", "http://localhost:8080/" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -79,7 +80,7 @@ services:
       netgrif.admin.data.redis.host: nae-redis
       netgrif.admin.data.redis.namespace: netgrif
       netgrif.admin.setup.admin.password: *admin-password
-      netgrif.admin.setup.zones[0].name: z1
+      netgrif.admin.setup.zones[0].name: *cluster-zone
       netgrif.admin.setup.zones[0].description: "Local development zone"
       otel.sdk.disabled: 'true'
       otel.traces.exporter: none
@@ -107,7 +108,7 @@ services:
       timeout: 10s
       retries: 10
     environment:
-      netgrif.gateway.node.zone: z1
+      netgrif.gateway.node.zone: *cluster-zone
       netgrif.gateway.node.host: nae-gateway
       NETGRIF_GATEWAY_NODE_ADMIN_NODE_HTTP_HOST: nae-admin
       NETGRIF_GATEWAY_NODE_ADMIN_NODE_GRPC_HOST: nae-admin
@@ -149,7 +150,7 @@ services:
       NETGRIF_SEARCH_NODE_IN_CLOUD: false
       NETGRIF_SEARCH_NODE_HOST: nae-search
       netgrif.engine.data.redis.namespace: netgrif
-      netgrif.search.node.zone: z1
+      netgrif.search.node.zone: *cluster-zone
       otel.sdk.disabled: 'true'
       otel.traces.exporter: none
       otel.metrics.exporter: none
@@ -194,9 +195,7 @@ services:
       NETGRIF_WORKER_NODE_ADMIN_NODE_HOST: nae-admin
       NETGRIF_WORKER_NODE_IN_CLOUD: 'false'
       NETGRIF_WORKER_NODE_IS_ROOT: 'true'
-      # The tested cluster compose uses this key. The admin reports the root
-      # worker's zone as ENGINE_ROOT; the gateway routes to the root worker.
-      netgrif.worker.zone: z1
+      netgrif.worker.zone: *cluster-zone
       netgrif.engine.logging.file.path: log
       netgrif.engine.management.otlp.metrics.export.enabled: 'false'
       netgrif.engine.management.endpoint.shutdown.enabled: 'false'
@@ -207,6 +206,7 @@ services:
       netgrif.engine.management.metrics.export.simple: enabled
       netgrif.engine.management.metrics.storage.cron: "0 0 2 * * *"
       netgrif.engine.actions.imports: org.springframework.data.domain.PageRequest,org.springframework.data.mongodb.core.query.Criteria,org.springframework.data.domain.Page,com.netgrif.application.engine.objects.auth.domain.AbstractUser,com.netgrif.application.engine.objects.auth.domain.Realm,com.netgrif.application.engine.objects.workflow.domain.ProcessResourceId,com.netgrif.application.engine.objects.workflow.domain.TaskPair,com.netgrif.application.engine.objects.workflow.domain.Case,com.netgrif.application.engine.objects.workflow.domain.Task,com.netgrif.application.engine.objects.petrinet.domain.PetriNet,com.netgrif.application.engine.objects.petrinet.domain.roles.ProcessRole,org.springframework.data.mongodb.core.query.Query,org.springframework.data.domain.Pageable,
+      netgrif.engine.security.jwt.private-key: file:/opt/netgrif/engine/certificates/private.der
       otel.sdk.disabled: 'true'
       otel.traces.exporter: none
       otel.metrics.exporter: none
@@ -217,6 +217,7 @@ services:
       - ./nae/engine/logs:/opt/netgrif/engine/log:z
       - ./nae/engine/storage:/opt/netgrif/engine/storage:z
       - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:ro,z
+      - ./nae/engine/certificates:/opt/netgrif/engine/certificates:z
     depends_on:
       init-perms:
         condition: service_completed_successfully
@@ -246,7 +247,7 @@ services:
       NETGRIF_PLUGIN_SERVICE_GRPC_PORT: 9091
       NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_HOST: nae-admin
       NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_GRPC_PORT: 9999
-      NETGRIF_PLUGIN_SERVICE_SEARCH_DEFAULT_ZONE: z1
+      NETGRIF_PLUGIN_SERVICE_SEARCH_DEFAULT_ZONE: *cluster-zone
     ports:
       # Loopback only: anyone reaching 8700 acts as the admin account.
       - "127.0.0.1:8700:8700"
