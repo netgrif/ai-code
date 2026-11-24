@@ -12,6 +12,12 @@ it. It tests the process, not the engine-mcp mechanism itself.
   token is in the response at `attributes["MCP_IMPERSONATION_TOKEN"]`. It is
   opaque and stable per user: reuse that exact string for every call as that
   user.
+- **Realm:** all test users live in the realm `app-users` (AGENTS.md, "Realms").
+  The MCP works in one active realm: `create_user`, `get_user`, `assign_role` and
+  tokens act in it, and a token works only in the realm of its user. After
+  `switch_realm` to `Admin` (final admin-roles step) the tokens stop working, so
+  switch back to `app-users` at once. A plugin restart resets the active realm to
+  `Admin`: check `current_realm` before every user operation.
 - **Applying:** these tools take `impersonationToken`: `whoami`, `create_case`,
   `delete_case`, `deploy_process`, `delete_process`, `assign_task`,
   `cancel_task`, `finish_task`, `execute_task`, `set_data_at_task`, `get_case`,
@@ -22,14 +28,20 @@ it. It tests the process, not the engine-mcp mechanism itself.
   call. Omit the token deliberately and only for admin-side work: deploying or
   replacing the process and the final cleanup.
 - **Never take a token:** `create_user`, `delete_user`, `get_user`,
-  `assign_role`, `get_process`, `list_processes`.
-- **Roles:** the `roles` arguments are process-role ids as strings. Read them
-  from `get_process` (the roles of the deployed net) or from `processRoles` in
-  `get_user`. `assign_role` is authoritative: the list replaces the user's
-  process roles, and an omitted id is removed.
-- **Role ids change when a process is replaced.** After every deploy read them
-  again with `get_process` and assign them again. Never reuse ids from before the
-  redeploy.
+  `assign_role`, `get_process`, `list_processes`, `list_process_roles`,
+  `list_global_roles`, and the realm tools (`list_realms`, `create_realm`,
+  `current_realm`, `switch_realm`, ...).
+- **Roles:** the `roles` arguments are the `stringId` of the roles, as strings.
+  `get_process` shows roles only by `importId`, which `assign_role` does not
+  accept. Read the `stringId` of the roles of a process with
+  `list_process_roles(processIdentifier)` and of global roles with
+  `list_global_roles`; `processRoles` in `get_user` shows what a user has.
+  `assign_role` is authoritative: the list replaces the user's whole set of
+  roles, and an omitted id is removed, so include the roles the user must keep
+  (for example the global `default`; check `get_user` first).
+- **Role ids change when a process is replaced.** After every deploy read the
+  local role ids again with `list_process_roles` and assign them again. Never
+  reuse ids from before the redeploy.
 - **Tokens are secrets.** Do not write them into files, the report or chat
   output. Name users instead.
 - A tool error such as "Invalid or tampered token" or "Unknown impersonation
@@ -37,11 +49,19 @@ it. It tests the process, not the engine-mcp mechanism itself.
 
 ## Setup (as system, no token)
 
+0. **Realm.** Call `list_realms`. If `app-users` does not exist, create it
+   (`create_realm`, name `app-users`, `makeActive`); otherwise `switch_realm` to
+   it. Never create another realm. Check `current_realm` is `app-users`. Write
+   `DEFAULT_REALM=app-users` into `.env` and recreate the frontend (see
+   AGENTS.md, "Realms"), so the test users can sign in there. Realm creation,
+   the switch and the `.env` change are part of the approved scenario.
 1. Deploy the process (see "Redeploying while iterating" in `SKILL.md`) and read
-   its role ids with `get_process`.
+   the `stringId` of its roles with `list_process_roles` and of the global roles
+   it uses with `list_global_roles`.
 2. Create one test user per role to test, plus one user without roles. Check the
-   `create_user` schema for its parameters and prefix every test user with
-   `mcptest_`, so the report and a future cleanup can tell them from real users.
+   `create_user` schema for its parameters, pass `password: "password"` and
+   prefix every test user with `mcptest_`, so the report and a future cleanup
+   can tell them from real users.
 3. `assign_role` per user with the ids from step 1. Check the result with
    `get_user`.
 4. `whoami` with each user's token: it must return exactly that user. If not,
@@ -96,14 +116,32 @@ Cover the ones that apply to the process:
    its cases with it.
 2. The plugin runtime cannot delete users: the admin REST API has no
    user-delete route, so `delete_user` returns an error. Do not claim it
-   succeeded; list the `mcptest_` users in the report so they can be removed
-   later. A future admin image fix will add the endpoint.
+   succeeded; list the `mcptest_` users in the report (with their realm
+   `app-users`) so they can be removed later. A future admin image fix will add
+   the endpoint.
+3. The realm `app-users` is not deleted: it stays, like the deployed processes,
+   and the test users stay usable for the developer.
 
 Never delete anything you did not create. The deployed processes and the menu
 stay. Report what you deleted and anything you could not find or delete.
 
+## Admin roles (last step of the implementation)
+
+The `admin` account does not get the roles of processes automatically. Once,
+after the last deploy and the last scenario (not after every replacement), do
+the "Admin roles" steps from `AGENTS.md`: collect the `stringId` of the roles of
+all deployed processes of the application and of their global roles; `switch_realm`
+to `Admin` and read the roles of `admin` with `get_user`; change nothing if
+`admin` already has all of them, otherwise `assign_role` with the union of its
+existing roles and these; then always `switch_realm` back to `app-users` and
+check `current_realm`. This step needs no approval and is not part of the
+scenario presented for approval. A replaced process has new local role ids, so a
+replacement counts as a change. Report whether the roles were assigned or left
+unchanged.
+
 ## Report
 
 Add to the `test-process` report: the scenario matrix (user × action → expected /
-observed / verdict), the outcome label of every deviation, and the cleanup
-result.
+observed / verdict), the outcome label of every deviation, the cleanup
+result, the test users (realm `app-users`, password `password`, roles) and the
+result of the admin roles step.

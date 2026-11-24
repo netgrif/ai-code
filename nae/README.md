@@ -26,7 +26,7 @@ docker compose down                   # stop and remove containers
 
 | Service             | Image                                       | Ports      | Purpose                                                  |
 |---------------------|---------------------------------------------|------------|----------------------------------------------------------|
-| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.1`               | 3000       | Petriflow validation and docs for AI agents              |
+| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.2`               | 3000       | Petriflow validation and docs for AI agents              |
 | `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | 4300 → 80  | Visual editor of the files in `processes/`               |
 | `nae-admin`         | `docker.nexus.netgrif.com/netgrif-admin:1.1.0` | 8888, 9999 (this machine only) | Cluster admin: users, processes, nodes, applications     |
 | `nae-gateway`       | `docker.nexus.netgrif.com/netgrif-gateway:1.1.0` | 8080 → 8800, 8800 → 8800 | Cluster entry point; the frontend calls it             |
@@ -50,9 +50,16 @@ The builder is published on `127.0.0.1` only, because it can write process files
 The cluster is configured through environment variables in [`docker-compose.yaml`](../docker-compose.yaml). Once it is
 ready, `curl http://localhost:8080/manage/health` (gateway), `curl http://localhost:8888/manage/health` (admin),
 `curl http://localhost:8600/manage/health` (search node) and `curl http://localhost:8700/manage/health` (MCP plugin)
-return status `UP`. Log in at <http://localhost:4200> as
-`admin`; its password is set in `docker-compose.yaml` (`netgrif.admin.setup.admin.password`), a local dev default.
-Change it before you share the machine with anyone.
+return status `UP`. The frontend at <http://localhost:4200> is for the users of the application: it logs in to the realm
+set in `DEFAULT_REALM` (`app-users`, in `.env`; see [`../.env.example`](../.env.example)). The administrator `admin`
+signs in at <http://localhost:8888> and chooses the realm there; its password is set in `docker-compose.yaml`
+(`netgrif.admin.setup.admin.password`), a local dev default. Change it before you share the machine with anyone.
+
+Memory is limited per service in `docker-compose.yaml`: admin 1.5 GB, root worker 2 GB, search node 1 GB, gateway 1 GB,
+MCP plugin 1 GB, MongoDB 2 GB and Elasticsearch 1.5 GB (the cluster takes at most about 10 GB). The JVM heap of the
+Java services is 70 % of their limit (`JAVA_TOOL_OPTIONS`). Change the Java service limits with `ADMIN_MEM_LIMIT`,
+`ENGINE_MEM_LIMIT`, `SEARCH_MEM_LIMIT`, `GATEWAY_MEM_LIMIT` and `MCP_PLUGIN_MEM_LIMIT` in `.env`. Measure with
+`docker stats` (or `podman stats`).
 
 The database services have no volumes configured, so their data is removed together with the containers
 (`docker compose down`).
