@@ -33,6 +33,13 @@ Choose the first option that works. Move down only when the one above cannot do 
    integration). Actions call it as
    `Plugin.<registrationName>.<entryPoint>.<method>(args)`. Use the
    `write-plugin` skill. This is the default way to extend the platform.
+   It needs Java 21, Maven 3+ **and an account for the Netgrif Nexus**
+   (`plugin-client` and `nae-plugin-maven-plugin` are only in
+   `https://nexus.netgrif.com/repository/maven-public`, which answers 401
+   without credentials in `~/.m2/settings.xml`). If any of them is missing, say
+   so and offer the fallback: a separate service in its own container, built
+   in Docker and called from an action over HTTP. Tell the user it is a
+   fallback, not a plugin (no registration in the cluster).
 3. **Module**, only when a plugin cannot do it: the code must call another
    plugin or a module, use engine internals that `PluginActionApi` does not
    expose, or run inside the worker's own call. Use the `write-module` skill.
@@ -66,6 +73,13 @@ the frontmatter.
 
 ## MCP servers
 
+**Check first.** Before any process work, check that the tools of both
+servers are available to you as MCP tools (not over `curl`). `.mcp.json` is
+loaded only when the assistant is started in the repository root (the folder
+with this file) and the user approved the project MCP servers. If the tools are
+missing but the containers run, tell the user to restart the assistant in the
+repository root and approve the servers; do not build your own MCP client.
+
 - `petriflow-mcp` is the `petriflow-mcp` container of the compose stack, on
   `localhost:3000` (image 1.1.2). Use it to validate (`validate_process` with
   `appId`, `validate_action`), to look up Petriflow versions, components and the
@@ -96,8 +110,9 @@ the frontmatter.
 Prerequisites: Docker with Compose, and (only when developing plugins or modules)
 Java 21 and Maven 3+. The platform images are in `docker.nexus.netgrif.com`, so log in first:
 `docker login docker.nexus.netgrif.com`. **Warn the developer** that developing a
-plugin or module requires Java 21 and Maven 3+ installed; if they are missing, say so
-and stop before plugin or module work.
+plugin or module requires Java 21 and Maven 3+ installed and Netgrif Nexus
+credentials for Maven; if they are missing, say so and stop before plugin or
+module work.
 
 1. Start the cluster from the repository root: `docker compose up -d`
    (Docker Compose v2). It starts the platform admin, gateway, root worker,
@@ -239,6 +254,8 @@ engine container (owned by its user). Read logs from there, never write there.
 
 **Plugins.**
 
+- Building a plugin needs access to the Netgrif Nexus (see "How to implement a
+  requirement"); check it before writing code.
 - Sources in `plugins/<artifactId>/`: Spring Boot 4.1, `plugin-client` 1.1.0,
   `nae-plugin-maven-plugin` 1.0.2, built with
   `mvn -f plugins/<artifactId>/pom.xml clean package`. Each plugin has its own

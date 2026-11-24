@@ -336,6 +336,10 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    volumes:
+      # Keeps the search index when the container is recreated. Without it the
+      # index is lost while MongoDB keeps its data, and lists in the UI are empty.
+      - nae-elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - netgrif-platformnet
 
@@ -350,6 +354,9 @@ services:
       retries: 10
     networks:
       - netgrif-platformnet
+
+volumes:
+  nae-elasticsearch-data:
 
 networks:
   netgrif-platformnet:

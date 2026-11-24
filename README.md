@@ -44,9 +44,10 @@ The administrator `admin` signs in at **http://localhost:8888** and chooses the 
 start**: the admin stores it and the MCP plugin logs in with the same value.
 
 **3. Describe what the business needs.** Open the folder in any AI coding assistant: Claude Code, Codex, Cursor,
-GitHub Copilot, Gemini CLI or any other. There is nothing to configure. Hand it a Word document, an e-mail or a diagram
-you
-already have, or tell it the way you would tell a colleague:
+GitHub Copilot, Gemini CLI or any other. Open it in the **repository root** (the folder with `AGENTS.md`), not in a
+parent folder, and approve the project MCP servers when the assistant asks: they are defined in
+[`.mcp.json`](.mcp.json) and are loaded only from the root. Nothing else needs configuring. Hand it a Word document,
+an e-mail or a diagram you already have, or tell it the way you would tell a colleague:
 
 > We need an app for **[your process]**. **[Who]** starts it and fills in **[what]**.
 > **[Who]** approves it, and if they send it back, **[what happens]**. After approval

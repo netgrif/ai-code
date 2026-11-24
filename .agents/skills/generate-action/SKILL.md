@@ -150,5 +150,12 @@ level) casts the field value to an actor list, so the field must be of type
 `actorList`, a single `actor` field throws `ClassCastException` on every
 assign and finish.
 
+Reported from an agent test run on the 1.1.0 cluster (2026-11-23/24) and not yet
+reproduced: `loggedUser()` and `Date.format(...)` failed at run time inside
+actions although validation passed. Avoid them, or check them in a live
+scenario and read `nae/engine/logs/nae.log`. A user picked into an `actorList`
+field from the realm `app-users` could not be saved (`Group [...] does not
+exist`); a personal group of the user worked instead.
+
 Checked on the 1.1.0 cluster and fine: an action in a `caseEvents` `create` event
 (phase `post`) works; the earlier note that it breaks case creation does not hold.

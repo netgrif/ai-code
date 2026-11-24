@@ -97,7 +97,11 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    In the plugin runtime `get_task` returns `data` as one synthetic group with
    `fields.content[]`; do not compare it against the module's nested group shape.
    After each step compare the actual enabled tasks and data to the expected
-   ones. When a step fails, keep the exact outputs as evidence and clean up (step 5). Then fix the process, validate it
+   ones. Read the text of every result, not only its status: the REST API and
+   some MCP tools answer HTTP 200 (or `isError` false) with `{"error": ...}` in
+   the body. After a step with actions, also look at the end of
+   `nae/engine/logs/nae.log`: some action exceptions are only logged and the
+   task still moves on. When a step fails, keep the exact outputs as evidence and clean up (step 5). Then fix the process, validate it
    again (Stage 1), redeploy it per
    the table below and run the scenario again from step 3 as a new run.
 4. Several cooperating processes: deploy the processes that others reference (via caseRef, taskRef or case creation)
@@ -139,6 +143,22 @@ version. `deploy_process` has an optional boolean `replaceExisting` (default
 deployed and the flag is not `true`. With `true` the engine deletes the
 deployed version **including all its cases and tasks** and imports the provided
 XML.
+
+A replacement also deletes the menu items and dashboard items that refer to the
+replaced process (they are cases too), and in the test run of 2026-11-24 it left
+their documents in Elasticsearch: menu folders then showed "This view has no
+filter" and the frontend login stopped working. After the last replacement of a
+task, deploy the menu import and the dashboard import again
+(`generate-menu-import`, `generate-dashboard-items`) and check the menu in the
+frontend. Say this in the scenario you present for approval. If stale entries
+remain, report them; do not delete documents from the index without approval.
+
+When an import fails in an action that runs on upload, the admin may still
+register the process while the worker does not have it. The worker then fails
+on every start (`FunctionsCacheRunner: No Petri net with id ...` in
+`nae/engine/logs/nae.log`). Check `list_processes` and the log after every
+failed deploy and report such a leftover to the user; never edit MongoDB
+yourself.
 
 In the plugin runtime the replacement first deletes the deployed process and
 then waits about 5 s before importing. If the old version is still listed, the
@@ -253,3 +273,7 @@ user" in `AGENTS.md`.
 - Retrying a plugin replacement immediately instead of waiting until the old
   process is gone.
 - Writing impersonation tokens into files, the report or chat output.
+- Treating a 200 response or `isError` false as success without reading the
+  body for `error`.
+- Replacing a process and not redeploying the menu and dashboard imports
+  afterwards.
