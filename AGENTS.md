@@ -82,8 +82,14 @@ the frontmatter.
   `create_realm`, `current_realm`, `switch_realm`, ...) and the roles of users.
   Role ids for `create_user` and `assign_role` are the `stringId` values from
   `list_process_roles` (roles of one process) and `list_global_roles` (global
-  roles). `get_process` shows roles only by `importId`, which `assign_role`
-  does not accept.
+  roles). `get_process` shows roles only by `importId` (for a global role even
+  with `stringId` equal to its `importId`, which is not a real id), and
+  `assign_role` does not accept it. `list_process_roles` returns only the local
+  roles of a process; a global role declared in a process XML as `<id>x</id>` is
+  listed by `list_global_roles` with `importId` `global_x` (match it by that
+  `importId` or by its title). `create_user` returns the impersonation token as a
+  string in `attributes.MCP_IMPERSONATION_TOKEN`, `get_user` as an object with the
+  string in `.value`. Plugins are listed by `list_plugins` and `get_plugin`.
 
 ## Project setup
 
@@ -197,8 +203,10 @@ This step needs no approval. Say in the report whether the roles were assigned
 or left unchanged.
 
 **Known gap: deleting test users.** The plugin runtime cannot delete users: the
-admin REST API has no user-delete route, so `delete_user` returns an error. Test
-users therefore stay behind; list them in the report (with their realm
+admin REST API has no user-delete route. The tool `delete_user` exists, but it
+reports the failure inside a normal result with `isError` false, as
+`{"error": "Deleting users is not supported by the NAE admin REST API ..."}`: read
+the text of the result, not the flag. Test users therefore stay behind; list them in the report (with their realm
 `app-users`) and do not claim cleanup that did not happen. Future fix: add a
 user-delete endpoint to the admin image, then implement `delete_user` in the
 plugin. This is tracked in `TODOs.md`.
@@ -212,7 +220,7 @@ plugin. This is tracked in `TODOs.md`.
   `<app_name>/<process_name>` (e.g. `hello_world/hello_world`), unique across
   the whole NAE deployment. The file is `processes/<app_name>/<process_name>.xml`.
 - Use the latest Petriflow version from the Petriflow MCP unless pinned.
-- Pass `appId` (`<app_name>`) to `validate_process`; Petriflow MCP 1.1.1 enforces
+- Pass `appId` (`<app_name>`) to `validate_process`; Petriflow MCP enforces
   that the root process id is `<appId>/<processId>`.
 - The user can edit the same files in the builder. Before you edit or deploy a
   process file, compare `git hash-object <file>` (first 8 characters) with the
@@ -221,7 +229,7 @@ plugin. This is tracked in `TODOs.md`.
   session. Re-read only files that differ, keep the user's changes and never
   revert them. After your last write of a task, put the new hashes in the README.
 - Every process change must pass `validate_process`. Do not hand-wave around errors.
-- Actions are validated with `validate_action` (Petriflow MCP 1.1.1) before the
+- Actions are validated with `validate_action` (Petriflow MCP 1.1.2 or newer) before the
   process is validated. Actions are short, use Action API methods, one concern each. Never use Grape,
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
   function. Java libraries and whole services become plugins.
@@ -239,8 +247,9 @@ engine container (owned by its user). Read logs from there, never write there.
 - Actions call a plugin as `Plugin.<registrationName>.<entryPoint>.<method>(args)`.
   The web docs and the example plugin's properties are outdated; follow the
   `write-plugin` skill. A plugin cannot call another plugin or a module.
-- `engine-mcp` does not list plugins yet; check `docker compose ps`, the
-  plugin's logs and the admin UI (`/cluster/plugins`).
+- `engine-mcp` lists plugins with `list_plugins` and `get_plugin` (registered
+  plugins and their status); also check `docker compose ps`, the plugin's logs
+  and the admin UI (`/cluster/plugins`).
 
 **Modules.**
 

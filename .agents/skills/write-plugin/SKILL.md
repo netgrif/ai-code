@@ -135,7 +135,9 @@ improvising.
 8. **Run (approval).** From the repository root:
    `docker compose up -d --build <artifactId>`. After a code change: rebuild
    with Maven first, then the same command (it rebuilds the image).
-9. **Verify registration.** `engine-mcp` does not list plugins yet. Check:
+9. **Verify registration.** Check:
+   - `list_plugins` of `engine-mcp` (or `get_plugin` with the id) lists the
+     plugin with `nodeStatus` `RUNNING`; its `id` is the identifier below;
    - `docker compose ps <artifactId>` shows `healthy`;
    - `docker compose logs <artifactId>` shows `The following 1 profile is
      active: "service"`, `gRPC server started` and `Plugin with identifier

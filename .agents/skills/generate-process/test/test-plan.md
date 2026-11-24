@@ -116,9 +116,10 @@ rm -r ../netgrif-starter-test-green/.agents/skills/generate-process/test
   - Such runs change the live system: processes deployed, cases and `mcptest_`
     users created, and in round 1 the root worker container restarted
     (`podman restart netgrif-starter-nae-engine-1`, S4 RED). Users cannot be
-    deleted by the plugin, and `delete_process` reports success but fails
-    asynchronously when test users hold roles of the process (log: `Requested
-    role ID in AssignRolesToUserRequest cannot be null`). Tell the user before a
+    deleted by the plugin, and on the earlier cluster `delete_process` reported success but failed
+    asynchronously when test users held roles of the process (log: `Requested
+    role ID in AssignRolesToUserRequest cannot be null`); not reproduced on the
+    1.1.0 cluster (2026-11-24). Tell the user before a
     campaign, list `list_processes` after every run, and ask before deleting.
     Better: run the campaign against a disposable cluster. Reset recipe, only
     with the user's explicit permission (`AGENTS.md` otherwise forbids deleting
@@ -127,7 +128,7 @@ rm -r ../netgrif-starter-test-green/.agents/skills/generate-process/test
     projects' volumes: no global `volume prune`). Mongo uses anonymous volumes
     of its container, so this clears processes, cases and users; the bind
     mounts `nae/engine/storage` and `logs` stay. Check the five health URLs and
-    `list_processes` (10 system processes) afterwards. Round 2 used it once.
+    `list_processes` (14 system processes, including the dashboard ones) afterwards. Round 2 used it once.
   - Never run two scenarios in one worktree at the same time. In round 2 S2 and
     S4 shared one and wrote the same design file.
   Triggering queries ran in a third worktree (`netgrif-starter-test-trigger`,

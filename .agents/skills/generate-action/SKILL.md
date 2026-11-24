@@ -1,7 +1,7 @@
 ---
 name: generate-action
 description: Writes and validates Petriflow actions, the Groovy code that runs on process events, using the Petriflow Action API. Use when writing or changing an action inside a specific process XML, e.g. "compute the total when the price changes", "create a case when this task finishes", "hide a field after approval", or any reaction to data set/get or task assign/finish/cancel/delegate events. Not for designing a new process or its net (use generate-process).
-compatibility: Requires the petriflow-mcp MCP server 1.1.1 or newer (http://localhost:3000/mcp).
+compatibility: Requires the petriflow-mcp MCP server 1.1.2 or newer (http://localhost:3000/mcp).
 metadata:
   tested: false
   mcp-server: petriflow-mcp
@@ -131,3 +131,24 @@ what it does, the API methods used, and the results of `validate_action` and
 - Wrong phase (`pre` vs `post`).
 - Always returning a new value from `change ... value`: return `unchanged`
   when nothing changes, otherwise set-event actions on that field fire again.
+- Naming an action variable `owner` (`owner: f.owner;`). The action then fails
+  at run time, and when it runs inside a case-create cascade the whole
+  `create_case` fails (reproduced on the 1.1.0 cluster, 2026-11-24).
+  `validate_action` and `validate_process` accept it. A field with the id `owner`
+  is fine with another alias (`o: f.owner;`).
+- Expecting an exception in a `finish` `pre` action to be harmless. It blocks the
+  finish: the task stays active, and `finish_task` of the MCP returns `isError`
+  true with only "the engine call failed ... see the plugin log". Read the
+  engine log (`nae/engine/logs/nae.log`) for the cause.
+
+Seen on an earlier NAE 7.1.0 cluster and not re-tested on 1.1.0, so check them
+when a case behaves oddly: a `change` in a task `assign` action failed (use a
+`finish` `pre` action or a data-field set event); a `taskRef` keeps a task id
+that changes whenever the referenced case changes marking, so refresh the
+`taskRef` in the `assign` action of the receiving task; `actorRef` (case and task
+level) casts the field value to an actor list, so the field must be of type
+`actorList`, a single `actor` field throws `ClassCastException` on every
+assign and finish.
+
+Checked on the 1.1.0 cluster and fine: an action in a `caseEvents` `create` event
+(phase `post`) works; the earlier note that it breaks case creation does not hold.

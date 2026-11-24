@@ -214,6 +214,7 @@ services:
       NETGRIF_WORKER_NODE_IN_CLOUD: 'false'
       NETGRIF_WORKER_NODE_IS_ROOT: 'true'
       netgrif.worker.zone: *cluster-zone
+      netgrif.engine.dashboard.enabled: true
       netgrif.engine.logging.file.path: log
       netgrif.engine.management.otlp.metrics.export.enabled: 'false'
       netgrif.engine.management.endpoint.shutdown.enabled: 'false'

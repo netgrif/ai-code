@@ -35,7 +35,7 @@ Redeploying while iterating).
    Use the latest, unless the user or project pins another.
 3. Call `validate_process` with that version, the raw XML and `appId` (the
    application folder name; check the tool schema for exact verbatim parameter
-   names). Petriflow MCP 1.1.1 requires the process id to be `<appId>/<processId>`
+   names). Petriflow MCP requires the process id to be `<appId>/<processId>`
    when `appId` is set.
 4. For every returned issue: quote it, locate the element in the XML, and
    propose a concrete fix as a diff. Group related issues.
@@ -64,6 +64,9 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    or user-bound fields, read `references/role-scenarios.md` first and add role
    scenarios: every step then runs as an impersonated test user, because a
    token-less call is the system user and proves nothing about permissions.
+   The impersonation token gives the identity (author) only: the MCP does not
+   enforce role permissions, so check permissions with a real login over REST
+   as described there.
 2. Call `list_processes` to see which process ids and versions are deployed.
    Present to the user, in one message: the processes to deploy (the plugin
    deploys to its default worker, `NETGRIF Root Worker`), for each whether it is
@@ -112,7 +115,9 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    clean UI. Delete the test cases you created (`delete_case`), including cases
    created by actions. Test users use the `mcptest_` prefix; the plugin runtime
    cannot delete them (`delete_user` is unsupported because the admin REST API
-   has no user-delete route), so list them in the report and do not claim
+   has no user-delete route; it answers with `isError` false and the text
+   `{"error": "Deleting users is not supported ..."}`, so read the text, not
+   the flag), so list them in the report and do not claim
    cleanup that did not happen. Delete nothing you did not create. Deployed
    processes, the menu and the realm `app-users` stay. The deployed process must be the final file: if
    the XML changed after the last deploy, replace it, run the scenario again and
@@ -123,7 +128,8 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    `references/role-scenarios.md`: compare the `stringId` of the roles of the
    deployed processes with the roles of `admin` (`get_user` in realm `Admin`),
    `assign_role` only if some are missing, and always `switch_realm` back to
-   `app-users`. No approval needed. Report assigned or unchanged.
+   `app-users`. A global role `x` of a process is listed by `list_global_roles`
+   as `global_x`. No approval needed. Report assigned or unchanged.
 
 ## Redeploying while iterating
 
@@ -138,6 +144,15 @@ In the plugin runtime the replacement first deletes the deployed process and
 then waits about 5 s before importing. If the old version is still listed, the
 plugin skips the import and the call fails. Re-check `list_processes` and retry
 once the old version is gone; do not bump the version to get around it.
+
+An earlier cluster reported success from `delete_process` and then failed
+asynchronously when test users held roles of the process (engine log:
+`Requested role ID in AssignRolesToUserRequest cannot be null`), and refused to
+import the same process id again. On the 1.1.0 cluster (tested 2026-11-24)
+`delete_process` removed a process whose local role a test user held, the role
+disappeared from the user, and the same id was imported again at once, also with
+`replaceExisting`. Still check `list_processes` after a delete. Local role ids
+change with every import: assign them again.
 
 ## Deploying an application package
 
@@ -178,7 +193,7 @@ simpler.
 | Role ids                         | `list_process_roles`, `list_global_roles` (not `get_process`)     | no                                                                   |
 | Test users and roles             | `create_user`, `assign_role`, `get_user`, `whoami`                | yes, once per presented scenario; see `references/role-scenarios.md` |
 | Admin roles (last step)          | `switch_realm`, `get_user`, `assign_role` for `admin`             | no; only if roles changed; switch back to `app-users`                |
-| Clean up after the scenario      | `delete_case` (`delete_user` unsupported in plugin runtime)       | covered by that approval; only what the scenario created             |
+| Clean up after the scenario      | `delete_case` (`delete_user` unsupported: result text `error`)    | covered by that approval; only what the scenario created             |
 
 ## Report
 
@@ -216,7 +231,9 @@ user" in `AGENTS.md`.
   builder since you read it.
 - Running a role-protected process only token-less (as system) and calling the
   permissions fine.
-- Drawing a permission conclusion from a call without an impersonation token.
+- Drawing a permission conclusion from a call without an impersonation token, or
+  from a permitted result of a call with one: the MCP does not enforce
+  permissions (use the real login over REST).
 - Reusing role ids from before a redeploy.
 - Creating test users in the realm `Admin` (every user there is an administrator,
   so role assignments prove nothing), or creating any realm other than `app-users`.

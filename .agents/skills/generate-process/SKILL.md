@@ -53,7 +53,7 @@ shortcut and report it afterwards.
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
 - `validate_process` with `appId` after every change to a process file, until
-  clean. Petriflow MCP 1.1.1 requires the root id to be `<appId>/<processId>` when
+  clean. Petriflow MCP requires the root id to be `<appId>/<processId>` when
   `appId` is set.
 - Two versions, do not mix them up: the *Petriflow version* is the language
   version from `list_versions`; the *process version* is the `<version>`
@@ -531,8 +531,7 @@ hand-off block from `AGENTS.md`.
   because the user said to skip it or the MCP is slow.
 - Deploying, creating cases or users, or executing tasks on the NAE to "check
   the work" without the approval `test-process` requires. Test users cannot be
-  deleted afterwards, and a deleted process whose roles users hold may refuse
-  to delete.
+  deleted afterwards.
 - Writing a design document or plan (brainstorming, writing plans) whose
   architecture was not run through steps 3 and 5 of this skill.
 - Deciding that a number named in the requirement is fixed ("five reviewers")
