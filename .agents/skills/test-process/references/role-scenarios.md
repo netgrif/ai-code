@@ -4,146 +4,110 @@ Read this when the process has role permissions (roles on transitions or data
 fields) or user-bound fields, or when who may see a case matters (R6 in
 `generate-process`). It extends Stage 2 of `test-process`: the same approval,
 redeploy rules and report, but every step runs as the user who is supposed to do
-it. It tests the process, not the engine-mcp mechanism itself.
+it, through a real sign-in.
 
-## How impersonation works
+## Tooling on cluster 1.1.0 (BYPASS W3)
 
-- **Minting:** `create_user(...)` returns the new `User`. Its impersonation
-  token is in the response at `attributes["MCP_IMPERSONATION_TOKEN"]`, a
-  string. `get_user` returns it as an object, with the string in
-  `attributes["MCP_IMPERSONATION_TOKEN"].value`. It is
-  opaque and stable per user: reuse that exact string for every call as that
-  user.
-- **Realm:** all test users live in the realm `app-users` (AGENTS.md, "Realms").
-  The MCP works in one active realm: `create_user`, `get_user`, `assign_role` and
-  tokens act in it, and a token works only in the realm of its user. After
-  `switch_realm` to `Admin` (final admin-roles step) the tokens stop working, so
-  switch back to `app-users` at once. A plugin restart resets the active realm to
-  `Admin`: check `current_realm` before every user operation.
-- **Applying:** these tools take `impersonationToken`: `whoami`, `create_case`,
-  `delete_case`, `deploy_process`, `delete_process`, `assign_task`,
-  `cancel_task`, `finish_task`, `execute_task`, `set_data_at_task`, `get_case`,
-  `get_task`, `list_tasks_of_case`. The call runs as that user for **identity**:
-  the author of a created case and `whoami` are the test user.
-- **The MCP does not enforce role permissions (tested on the 1.1.0 cluster,
-  2026-11-24).** A user with only the `default` role created a case of a process
-  whose case-create right belongs to another role, and set data in a task that
-  only that role may perform, through `create_case` and `execute_task` with its
-  token. So a permitted result of a token call proves nothing about the
-  process permissions. Check permissions with a real login instead (next
-  section) and use the token calls for the flow of the process and the author.
-- **No token means system:** a call without the token runs as the system user
-  with unlimited rights. Never draw a permission conclusion from a token-less
-  call. Omit the token deliberately and only for admin-side work: deploying or
-  replacing the process and the final cleanup.
-- **Never take a token:** `create_user`, `delete_user`, `get_user`,
-  `assign_role`, `get_process`, `list_processes`, `list_process_roles`,
-  `list_global_roles`, and the realm tools (`list_realms`, `create_realm`,
-  `current_realm`, `switch_realm`, ...).
-- **Roles:** the `roles` arguments are the `stringId` of the roles, as strings.
-  `get_process` shows roles only by `importId`, which `assign_role` does not
-  accept (for a global role it even shows a `stringId` equal to the `importId`,
-  which is not a real id). Read the `stringId` of the local roles of a process
-  with `list_process_roles(processIdentifier)`; it does not return global roles.
-  Read the global roles with `list_global_roles`: a global role declared in the
-  XML as `<id>x</id>` is listed there with `importId` `global_x`.
-  `processRoles` in `get_user` shows what a user has. A new user already has
-  the global `default` role.
-  `assign_role` is authoritative: the list replaces the user's whole set of
-  roles, and an omitted id is removed, so include the roles the user must keep
-  (for example the global `default`; check `get_user` first).
-- **Role ids change when a process is replaced.** After every deploy read the
-  local role ids again with `list_process_roles` and assign them again. Never
-  reuse ids from before the redeploy.
-- **Tokens are secrets.** Do not write them into files, the report or chat
-  output. Name users instead.
-- A tool error such as "Invalid or tampered token" or "Unknown impersonation
-  user ..." is a result. Report it, do not work around it.
+`engine-mcp` (plugin 1.0.0) cannot run these scenarios: it has no realm tools,
+no role listing, its `create_user` makes users without a password in the realm
+`Admin` (every user there is an administrator), and its impersonated calls do
+not enforce role permissions (a user without the role created a case and set
+data in a task of another role). Use `workarounds/nae.sh` (bash + curl, Git Bash
+on Windows) for users, roles and every step of a scenario. Use `engine-mcp` only
+for admin-side work: `deploy_process`, `list_processes`, `get_process`, and
+`delete_case` in the cleanup.
 
-## Setup (as system, no token)
+`workarounds/nae.sh as <user> METHOD PATH [JSON]` signs in through the gateway
+as that user of `app-users` (password `password`) and calls the engine REST API
+with the user's session. The token is never printed. Output is the JSON body; an
+HTTP status of 400 or more exits with 1 and prints `HTTP <code>` to stderr.
 
-0. **Realm.** Call `list_realms`. If `app-users` does not exist, create it
-   (`create_realm`, name `app-users`, `makeActive`); otherwise `switch_realm` to
-   it. Never create another realm. Check `current_realm` is `app-users`. Write
-   `DEFAULT_REALM=app-users` into `.env` and recreate the frontend (see
-   AGENTS.md, "Realms"), so the test users can sign in there. Realm creation,
-   the switch and the `.env` change are part of the approved scenario.
-1. Deploy the process (see "Redeploying while iterating" in `SKILL.md`) and read
-   the `stringId` of its roles with `list_process_roles` and of the global roles
-   it uses with `list_global_roles`.
-2. Create one test user per role to test, plus one user without roles. Check the
-   `create_user` schema for its parameters, pass `password: "password"` and
-   prefix every test user with `mcptest_`, so the report and a future cleanup
-   can tell them from real users.
-3. `assign_role` per user with the ids from step 1. Check the result with
-   `get_user`.
-4. `whoami` with each user's token: it must return exactly that user. If not,
-   stop and report: every later result would be worthless.
+## Engine REST calls (gateway, `http://localhost:8080`)
 
-## Checking permissions with a real login (REST)
+| Step | Call |
+|------|------|
+| Create a case | `POST /api/workflow/case/` (trailing slash; without it 404) with `{"netId":"<process stringId>","title":null,"color":null}`; the case is in `outcome.aCase` or `outcome.outcomes[0].aCase` |
+| Cases the user may see | `POST /api/workflow/case/search?page=0&size=50` with `{"process":[{"identifier":"<app>/<process>"}]}`; add `"query":"dataSet.<field>.textValue.keyword:\"<value>\""` to search by a field |
+| Tasks of a case | `GET /api/task/case/<caseId>` (lists every task of the case, also ones the user may not do: try the task, do not infer from the list) |
+| Assign | `GET /api/task/assign/<taskId>` |
+| Set data | `POST /api/task/<taskId>/data` with `{"<taskId>":{"<fieldId>":{"type":"text","value":"..."}}}` (`enumeration_map` takes the key, `number` a number) |
+| Read data | `GET /api/task/<taskId>/data` |
+| Finish | `GET /api/task/finish/<taskId>` |
+| Cancel | `GET /api/task/cancel/<taskId>` |
 
-The engine enforces the permissions of a real login, so every permission check
-of the matrix goes through it. The test users have the password `password`.
+How the engine answers:
 
-1. Log in through the gateway, the way the frontend does:
-   `POST http://localhost:8080/api/auth/login` with HTTP Basic auth
-   (`<username>:password`) and the header `X-Realm-Id: app-users`. The token is in
-   the response header `X-Auth-Token`. It is a secret like the impersonation
-   token: keep it in a shell variable, never print it or write it into a file.
-2. Call the engine REST API of the root worker (`http://localhost:8082/api/...`,
-   local only) with the header `X-Auth-Token: <token>`, for example
-   `POST /api/workflow/case` with `{"title": "...", "netId": "<process stringId>"}`
-   (`get_process` returns the `stringId`). The gateway returned 404 for this
-   path in the test, so use the worker.
-3. A user without the permission gets HTTP 500, not 403: the engine throws a
-   `NullPointerException` in `WorkflowAuthorizationService.userHasAtLeastOneRolePermission`
-   (engine log). Treat 500 as denied, label it "suspected engine defect" in the
-   report (wrong status code) and compare with the user who holds the role
-   (HTTP 200). Tested: case creation only; check other operations the same way
-   and report what you saw.
-4. Delete the cases you created like any other (`delete_case`, no token).
+- **A refused operation is often HTTP 200** with `{"error": "..."}` in the body,
+  for example `Field "Customer ID" has null value` (required field), or
+  `... cannot be assigned` (already assigned). Read the body of every call.
+- **No permission:** assign answers `403 Forbidden`; finish without assign
+  answers `405` ("not assigned").
+- **Data by id is not protected:** `GET /api/task/<id>/data` and
+  `GET /api/workflow/case/<id>` return the data to any signed-in user who knows
+  the id. Test what a role sees through `case/search` and through the tasks it
+  can assign, and report the by-id gap (AGENTS.md, "Known gap: data by id")
+  when the requirement hides data from a role.
+- Pass role ids as `stringId` strings. Global roles of a process are listed by
+  `workarounds/nae.sh roles` with `importId` `global_<id>`; local roles with
+  their `processIdentifier`. A new user has the global `default` role.
 
 ## Expected matrix first
 
 Before running anything, derive from the process XML who may do what, and write
-a matrix: user (role) × action → expected outcome. Actions are: see the case,
-see the task, assign, set data, finish, cancel, delete. If the XML does not
-decide an outcome, ask the user instead of guessing.
+a matrix: user (role) × action → expected outcome. Actions are: see the case
+(search), see the task, assign, set data, finish, cancel, delete. If the XML
+does not decide an outcome, ask the user instead of guessing.
+
+## Setup
+
+0. **Realm.** `workarounds/nae.sh realms`: `app-users` must exist with
+   `"defaultRealm":true` (the compose job `realm-init`, BYPASS W2, does it). If
+   not, read `docker compose logs realm-init` and stop. Never create a realm.
+1. Deploy the process (see "Redeploying while iterating" in `SKILL.md`) and read
+   the `stringId` of its roles and of the global roles it uses with
+   `workarounds/nae.sh roles` (optionally with a search text).
+2. Create one test user per role to test, plus one user without roles:
+   `workarounds/nae.sh create-user mcptest_<name> <First> <Last>`. Note the `id`
+   of each from the output. The prefix `mcptest_` tells test users from real ones.
+3. Assign roles: `workarounds/nae.sh assign-roles app-users <userId> <defaultRoleId> <roleId>...`.
+   It replaces the whole set, so include the `default` role id (read it first
+   with `workarounds/nae.sh user app-users <userId>`). Check the result with
+   `user` again.
+4. Sign-in check: `workarounds/nae.sh as mcptest_<name> POST '/api/workflow/case/search?page=0&size=1' '{}'`
+   must answer for every user. If a sign-in fails, stop and report.
+
+Role ids change when a process is replaced: read them again after every
+replacement and assign them again. Never reuse ids from before the redeploy.
 
 ## Scenarios
 
-Cover the ones that apply to the process. Check every permission result (view,
-assign, set, finish, cancel, delete, create) with a real login over REST, see
-above: the MCP token calls do not filter or deny by role, so they only show the
-flow and the author.
+Cover the ones that apply to the process.
 
-1. **View enforcement.** `list_tasks_of_case`, `get_task` and `get_case` as a
-   role-holder, a non-holder and an unrelated user. Distinguish "empty or
-   filtered" from "error" and report which one it was.
+1. **View.** `case/search` as a role-holder, a non-holder and an unrelated
+   user. Distinguish "empty" from "error" and report which one it was.
 2. **Operation rights.** Assign, set data, finish and cancel a task as the right
-   role (must work) and the wrong role (must fail; note where in the flow it is
-   refused). Also `execute_task` end to end as both.
-3. **Role changes mid-case.** Grant a role with `assign_role`, rerun a
+   role (must work) and the wrong role (must fail; note the status and body).
+3. **Required fields and validations.** Finish with a required field empty (must
+   fail with an `error` body), then fill it and finish.
+4. **Role changes mid-case.** Grant a role with `assign-roles`, rerun a
    previously denied action (must now work), revoke the role, rerun (must fail
    again).
-4. **Author attribution.** `create_case` as user X, then `get_case` as X shows X
-   as the author.
-5. **Per-user cases.** Where each user has their own case, user A must not see
-   user B's case.
-6. **Destructive rights.** `delete_case` as a user without the right (must
-   fail), only if the process or requirement cares. Run `delete_process` as a
-   non-admin last, and only if it matters: if it unexpectedly succeeds, the
-   process under test is gone and must be redeployed.
+5. **Author and per-user cases.** A case created by user X shows X as
+   `author`; where each user has their own case, user B must not find user A's
+   case in `case/search`.
+6. **Destructive rights.** Delete a case as a user without the right (must fail),
+   only if the process or requirement cares.
 
 ## While running
 
-- Every step uses the token of the user who is supposed to do it. A step without
-  a token is system and proves nothing about permissions.
-- A divergent result is the finding. Report the exact tool output: error text,
-  filtered versus empty, author and user names. Never retry and adjust until the
-  result matches the expectation.
+- Every step runs as the user who is supposed to do it (`nae.sh as`). A step
+  through `engine-mcp` or without a user is system and proves nothing about
+  permissions.
+- A divergent result is the finding. Report the exact output: status, error
+  text, filtered versus empty, author and user names. Never retry and adjust
+  until the result matches the expectation.
 - Label each outcome: process permission behavior, schema or validation error, or
-  suspected engine or MCP defect.
+  suspected engine defect.
 - A mismatch with the matrix is either a process bug (fix the XML, validate,
   replace the deployed process, run a new scenario) or an engine defect (report
   it).
@@ -151,38 +115,29 @@ flow and the author.
 ## Cleanup (after every scenario, also after a failed one)
 
 1. Delete the cases you created, including cases that actions created in other
-   processes, with `delete_case` and no token. A replaced process already took
-   its cases with it.
-2. The plugin runtime cannot delete users: the admin REST API has no
-   user-delete route, so `delete_user` answers with `isError` false and the text
-   `{"error": "Deleting users is not supported ..."}` (read the text, not the
-   flag). Do not claim it
-   succeeded; list the `mcptest_` users in the report (with their realm
-   `app-users`) so they can be removed later. A future admin image fix will add
-   the endpoint.
-3. The realm `app-users` is not deleted: it stays, like the deployed processes,
-   and the test users stay usable for the developer.
+   processes and cases left by a failed step, with the MCP `delete_case` (no
+   token). Find them with `case/search` as a user who sees all of them, or
+   `list_tasks_of_case`/`get_case` by id. A replaced process already took its
+   cases with it.
+2. Users cannot be deleted (the admin REST API has no user-delete route). List
+   the `mcptest_` users in the report with their realm `app-users`; they stay
+   usable for the developer.
+3. The realm `app-users` stays, like the deployed processes.
 
 Never delete anything you did not create. The deployed processes and the menu
 stay. Report what you deleted and anything you could not find or delete.
 
 ## Admin roles (last step of the implementation)
 
-The `admin` account does not get the roles of processes automatically. Once,
-after the last deploy and the last scenario (not after every replacement), do
-the "Admin roles" steps from `AGENTS.md`: collect the `stringId` of the roles of
-all deployed processes of the application and of their global roles; `switch_realm`
-to `Admin` and read the roles of `admin` with `get_user`; change nothing if
-`admin` already has all of them, otherwise `assign_role` with the union of its
-existing roles and these; then always `switch_realm` back to `app-users` and
-check `current_realm`. This step needs no approval and is not part of the
-scenario presented for approval. A replaced process has new local role ids, so a
-replacement counts as a change. Report whether the roles were assigned or left
-unchanged.
+Once, after the last deploy and the last scenario, do the "Admin roles" steps
+from `AGENTS.md` with `workarounds/nae.sh` (`roles`, `users Admin`,
+`user Admin <id>`, `assign-roles Admin <id> ...`). This step needs no approval
+and is not part of the scenario presented for approval. Report whether the
+roles were assigned or left unchanged.
 
 ## Report
 
 Add to the `test-process` report: the scenario matrix (user × action → expected /
-observed / verdict), the outcome label of every deviation, the cleanup
-result, the test users (realm `app-users`, password `password`, roles) and the
-result of the admin roles step.
+observed / verdict), the outcome label of every deviation, the cleanup result,
+the test users (realm `app-users`, password `password`, roles) and the result of
+the admin roles step.

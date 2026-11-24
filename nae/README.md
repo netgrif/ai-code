@@ -50,8 +50,9 @@ The builder is published on `127.0.0.1` only, because it can write process files
 The cluster is configured through environment variables in [`docker-compose.yaml`](../docker-compose.yaml). Once it is
 ready, `curl http://localhost:8080/manage/health` (gateway), `curl http://localhost:8888/manage/health` (admin),
 `curl http://localhost:8600/manage/health` (search node) and `curl http://localhost:8700/manage/health` (MCP plugin)
-return status `UP`. The frontend at <http://localhost:4200> is for the users of the application: it logs in to the realm
-set in `DEFAULT_REALM` (`app-users`, in `.env`; see [`../.env.example`](../.env.example)). The administrator `admin`
+return status `UP`. The frontend at <http://localhost:4200> is for the users of the application: it signs in to the
+default realm, `app-users`, which the `realm-init` job sets up (see [`../workarounds/README.md`](../workarounds/README.md),
+BYPASS W1 and W2). The administrator `admin`
 signs in at <http://localhost:8888> and chooses the realm there; its password is set in `docker-compose.yaml`
 (`netgrif.admin.setup.admin.password`), a local dev default. Change it before you share the machine with anyone.
 

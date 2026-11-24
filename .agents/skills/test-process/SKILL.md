@@ -17,8 +17,8 @@ local NAE, only after validation passes. Never replace validation with reading
 the XML by eye.
 
 **Approval rule:** any tool call that changes the local NAE (deploy, create
-case, execute task, create or delete users, create a realm, switch the active
-realm, assign roles, delete cases, write `.env`, recreate the frontend) needs
+case, execute task, create or delete users, assign roles, delete cases, write
+`.env`, recreate a container) needs
 user approval before it runs. The one exception is the final admin roles step
 (Stage 2, step 6). Read-only calls (`list_versions`, `validate_process`, `list_processes`,
 `list_tasks_of_case`)
@@ -62,25 +62,23 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    each step. If the process isn't understood well enough to predict outcomes,
    stop and ask instead of guessing inputs. If the process has role permissions
    or user-bound fields, read `references/role-scenarios.md` first and add role
-   scenarios: every step then runs as an impersonated test user, because a
-   token-less call is the system user and proves nothing about permissions.
-   The impersonation token gives the identity (author) only: the MCP does not
-   enforce role permissions, so check permissions with a real login over REST
-   as described there.
+   scenarios: every step then runs as a test user signed in through the
+   gateway (`workarounds/nae.sh as`, BYPASS W3), because an MCP call is the
+   system user (or an impersonation that does not enforce role permissions)
+   and proves nothing about permissions.
 2. Call `list_processes` to see which process ids and versions are deployed.
    Present to the user, in one message: the processes to deploy (the plugin
    deploys to its default worker, `NETGRIF Root Worker`), for each whether it is
    a new deploy or a replacement (the replaced id and version, and that its
    cases and tasks will be deleted), the case to create (title), the test users
-   with their roles (role scenarios) and the realm `app-users` they live in (and,
-   if it does not exist yet, that it is created, that `DEFAULT_REALM=app-users`
-   is written to `.env` and that the frontend is recreated), the cleanup, and
-   the full scenario. Ask
+   with their roles (role scenarios) in the realm `app-users` (set up by the
+   compose job `realm-init`; check it with `workarounds/nae.sh realms`), the
+   cleanup, and the full scenario. Ask
    for approval **once**. Approval covers `deploy_process` (including
    `replaceExisting` for these processes) or `upload_application` +
    `deploy_application` when the scenario uses a package, `create_case`, every
-   `execute_task` in that scenario, creating the realm `app-users`, its `.env`
-   entry and the frontend recreate, creating its test users, `assign_role`, and
+   `execute_task` and every `nae.sh as` step in that scenario, creating its test
+   users and assigning their roles (`nae.sh create-user`, `assign-roles`), and
    the cleanup deletes, and their repeats while you iterate on the same
    implementation: later replacements of the same processes need no new
    approval. The plugin cannot delete users (see step 5). Anything outside it
@@ -130,10 +128,10 @@ repository root and checking the admin (:8888), gateway (:8080) and plugin
    not after every replacement): the `admin` account gets no process roles
    automatically. Follow "Admin roles" in `AGENTS.md` and
    `references/role-scenarios.md`: compare the `stringId` of the roles of the
-   deployed processes with the roles of `admin` (`get_user` in realm `Admin`),
-   `assign_role` only if some are missing, and always `switch_realm` back to
-   `app-users`. A global role `x` of a process is listed by `list_global_roles`
-   as `global_x`. No approval needed. Report assigned or unchanged.
+   deployed processes (`workarounds/nae.sh roles`; a global role `x` is listed
+   as `global_x`) with the roles of `admin` (`nae.sh user Admin <id>`) and
+   `nae.sh assign-roles Admin <id> ...` with the union only if some are missing.
+   No approval needed. Report assigned or unchanged.
 
 ## Redeploying while iterating
 
@@ -158,7 +156,14 @@ register the process while the worker does not have it. The worker then fails
 on every start (`FunctionsCacheRunner: No Petri net with id ...` in
 `nae/engine/logs/nae.log`). Check `list_processes` and the log after every
 failed deploy and report such a leftover to the user; never edit MongoDB
-yourself.
+yourself. `delete_process` and the admin's `DELETE /api/petrinet/{id}` report
+success for such a leftover but do not remove it (cluster 1.1.0): deploy the
+fixed file with the same id and version and `replaceExisting: true`, which
+replaces the registration. A failed upload also leaves the cases its actions
+created in Elasticsearch (MongoDB rolled them back): they show up as menu items
+that do not open. Compare the case counts of MongoDB and the index per process,
+show the user the ghost documents and delete them from the index only with
+approval.
 
 In the plugin runtime the replacement first deletes the deployed process and
 then waits about 5 s before importing. If the old version is still listed, the
@@ -209,10 +214,11 @@ simpler.
 | Deploy / create case / run task  | `deploy_process`, `create_case`, `execute_task`                   | yes, once per presented scenario                                     |
 | Redeploy the same version        | `deploy_process` with `replaceExisting: true`                     | covered by that approval; deletes the process's cases and tasks      |
 | Inspect case tasks               | `list_tasks_of_case`                                              | no                                                                   |
-| Realm for test users             | `list_realms`, `current_realm` (read); `create_realm`, `switch_realm` | read: no; create/switch: yes, once per presented scenario            |
-| Role ids                         | `list_process_roles`, `list_global_roles` (not `get_process`)     | no                                                                   |
-| Test users and roles             | `create_user`, `assign_role`, `get_user`, `whoami`                | yes, once per presented scenario; see `references/role-scenarios.md` |
-| Admin roles (last step)          | `switch_realm`, `get_user`, `assign_role` for `admin`             | no; only if roles changed; switch back to `app-users`                |
+| Realm for test users             | `workarounds/nae.sh realms` (read; `realm-init` creates it)       | no                                                                   |
+| Role ids                         | `workarounds/nae.sh roles` (not `get_process`)                    | no                                                                   |
+| Test users and roles             | `workarounds/nae.sh create-user`, `assign-roles`, `user`          | yes, once per presented scenario; see `references/role-scenarios.md` |
+| Steps as a test user             | `workarounds/nae.sh as <user> METHOD PATH [JSON]`                 | covered by the scenario approval                                     |
+| Admin roles (last step)          | `workarounds/nae.sh user Admin <id>`, `assign-roles Admin <id> ...` | no; only if roles changed                                          |
 | Clean up after the scenario      | `delete_case` (`delete_user` unsupported: result text `error`)    | covered by that approval; only what the scenario created             |
 
 ## Report
@@ -251,28 +257,28 @@ user" in `AGENTS.md`.
   builder since you read it.
 - Running a role-protected process only token-less (as system) and calling the
   permissions fine.
-- Drawing a permission conclusion from a call without an impersonation token, or
-  from a permitted result of a call with one: the MCP does not enforce
-  permissions (use the real login over REST).
+- Drawing a permission conclusion from an MCP call (system or impersonated):
+  the MCP does not enforce permissions. Use `workarounds/nae.sh as`.
 - Reusing role ids from before a redeploy.
-- Creating test users in the realm `Admin` (every user there is an administrator,
-  so role assignments prove nothing), or creating any realm other than `app-users`.
-- Calling `assign_role` with an `importId` or the output of `get_process` instead
-  of the `stringId` from `list_process_roles` / `list_global_roles`.
-- Not checking `current_realm` before a user operation (it resets to `Admin` when
-  the plugin restarts), or leaving the realm on `Admin` after the admin roles step.
-- `assign_role` without the roles the user already has (it replaces the whole set).
+- Creating test users with the MCP `create_user`: they land in the realm `Admin`
+  (every user there is an administrator) without a password. Use
+  `workarounds/nae.sh create-user`. Never create a realm.
+- Assigning an `importId` or the output of `get_process` instead of the
+  `stringId` from `workarounds/nae.sh roles`.
+- `assign-roles` without the roles the user already has, `default` included (it
+  replaces the whole set).
 - Assigning roles to `admin` after every replacement of a process, or when
   `admin` already has all of them, or not at all at the end of the implementation.
-- Creating `app-users` without writing `DEFAULT_REALM=app-users` to `.env` and
-  recreating the frontend, so nobody can sign in there.
+- Concluding that a role cannot see data because its forms hide it: the engine
+  REST API returns task data and cases by id to any signed-in user
+  (AGENTS.md, "Known gap: data by id").
 - Retrying and adjusting a role scenario until it matches the expectation.
 - Leaving test cases behind, or deleting ones you did not create.
 - Claiming test users were deleted when the plugin's `delete_user` returned an
   error; they stay and must be reported.
 - Retrying a plugin replacement immediately instead of waiting until the old
   process is gone.
-- Writing impersonation tokens into files, the report or chat output.
+- Writing session or impersonation tokens into files, the report or chat output.
 - Treating a 200 response or `isError` false as success without reading the
   body for `error`.
 - Replacing a process and not redeploying the menu and dashboard imports

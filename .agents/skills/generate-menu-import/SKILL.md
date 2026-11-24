@@ -48,6 +48,13 @@ Template and API reference: `references/menu-api.md`.
   upload fails.
 - Do not wrap calls in empty `try/catch`. A broken item must fail the upload
   visibly, not disappear from the menu.
+- At most four menu items per import process. The upload event runs in one
+  MongoDB transaction (about 60 s) and one item with its filter and view
+  configurations takes 2 to 7 s. A longer import is rolled back in MongoDB but
+  leaves its cases in Elasticsearch, and the admin still registers the process
+  (seen on cluster 1.1.0). Split a bigger menu into several imports
+  (`menu_import`, `menu_import_<area>`), deploy them one by one, and deploy the
+  dashboard import after all of them.
 
 ## Steps
 

@@ -3,8 +3,8 @@
 This repository is a **template for applications on the Netgrif Platform (NAE)**.
 It is not a code project: the application logic lives in **Petriflow processes**
 that run on the Netgrif Application Engine, and the user interface is the
-standard Netgrif frontend, which runs as a container. This repository has no
-frontend sources.
+standard Netgrif frontend, which runs as a container. Custom frontend
+components are the exception (see "How to implement a requirement").
 Reply in the language the user writes in.
 
 ## Repository layout
@@ -19,8 +19,9 @@ Reply in the language the user writes in.
 | `plugins/<artifactId>/` | Plugin sources, one Maven project per plugin, with its `Dockerfile` and `compose.yaml`                                       |
 | `modules/<artifactId>/` | Java/Spring module sources, one Maven project per module                                                                     |
 | `.agents/skills/`       | Task playbooks for agents (see below)                                                                                        |
+| `workarounds/`          | Marked bypasses (`BYPASS W1`–`W4`) for gaps of platform 1.1.0 and `nae.sh`, the REST helper for realms, users, roles and role tests; see its `README.md` |
 | `.mcp.json`             | MCP servers: `petriflow-mcp` (:3000) and `engine-mcp` (cluster plugin, :8700; needs the running cluster)                    |
-| `.env.example`          | Optional settings (`PUID`, `PGID` for the builder, `DEFAULT_REALM` for the frontend, memory limits of the Java services); a real `.env` is git-ignored |
+| `.env.example`          | Optional settings (`PUID`, `PGID` for the builder, `DEFAULT_REALM` (not read by frontend 7.1.0), memory limits of the Java services); a real `.env` is git-ignored |
 
 ## How to implement a requirement
 
@@ -46,9 +47,14 @@ Choose the first option that works. Move down only when the one above cannot do 
 
 Explain to the user why you moved down a level before doing it.
 
-Do not create or change frontend code. If a requirement needs a user interface
-that forms in processes and the menu cannot provide, tell the user instead of
-working around it.
+Custom frontend components are allowed when a requirement needs a user
+interface that forms in processes, the menu and the dashboard cannot provide
+(for example a document viewer next to the extracted data). Build them as an
+Angular project in `frontend/` on the public npm package `@netgrif/components`,
+served by its own container listed under `include:`, and leave the stock
+`frontend` service unchanged. Tell the user first why the stock frontend is not
+enough, and ask for approval before adding or changing the frontend container.
+Keep the look of the stock frontend (theme, fonts, wording).
 
 ## Skills
 
@@ -92,18 +98,20 @@ repository root and approve the servers; do not build your own MCP client.
   If it is not reachable, say so and stop. Do not fake results.
   The plugin's `/mcp` is unauthenticated and acts as the admin account; keep it
   on localhost and never expose it.
-  Besides processes, cases and tasks, its tools manage realms (`list_realms`,
-  `create_realm`, `current_realm`, `switch_realm`, ...) and the roles of users.
-  Role ids for `create_user` and `assign_role` are the `stringId` values from
-  `list_process_roles` (roles of one process) and `list_global_roles` (global
-  roles). `get_process` shows roles only by `importId` (for a global role even
-  with `stringId` equal to its `importId`, which is not a real id), and
-  `assign_role` does not accept it. `list_process_roles` returns only the local
-  roles of a process; a global role declared in a process XML as `<id>x</id>` is
-  listed by `list_global_roles` with `importId` `global_x` (match it by that
-  `importId` or by its title). `create_user` returns the impersonation token as a
-  string in `attributes.MCP_IMPERSONATION_TOKEN`, `get_user` as an object with the
-  string in `.value`. Plugins are listed by `list_plugins` and `get_plugin`.
+  Use it for processes (`deploy_process`, `list_processes`, `get_process`),
+  cases (`create_case`, `get_case`, `delete_case`), tasks and nodes
+  (`list_nodes`). The image in this template is `netgrif-nae-mcp-plugin:1.0.0`:
+  it has no realm tools and no `list_process_roles` / `list_global_roles`, its
+  `create_user` makes users without a password in the realm `Admin` (where every
+  user is an administrator), and impersonated calls do not enforce role
+  permissions. **BYPASS W3:** do users, roles, realms and every permission check
+  with `workarounds/nae.sh` instead (see `workarounds/README.md` and the
+  `test-process` skill). Role ids are the `stringId` values from
+  `workarounds/nae.sh roles`; a global role declared in a process XML as
+  `<id>x</id>` is listed with `importId` `global_x`. `get_process` shows roles
+  only by `importId`, which is not an id you can assign. Its HTTP client gives
+  up after 30 s ("Read timed out") while a long deploy keeps running: check
+  `list_processes` and the engine log before you deploy again.
 
 ## Project setup
 
@@ -120,7 +128,12 @@ module work.
    databases. A short `init-perms` job fixes the owner of `nae/engine/logs` and
    `storage` first. The gateway waits for a healthy admin and root worker; the
    search node waits for the admin and root worker; the frontend waits for the
-   gateway; the plugin waits for the admin and root worker.
+   gateway and the `realm-init` job; the plugin waits for the admin and root
+   worker. The stack carries marked workarounds for gaps of platform 1.1.0
+   (`BYPASS W1`–`W4`, listed in `workarounds/README.md`): `realm-init` sets up
+   the realm `app-users`, the frontend gets a sign-in fix, MongoDB a longer
+   transaction limit. Check them with
+   `docker compose logs realm-init frontend | grep BYPASS`.
 2. Wait until the cluster is healthy (no authentication needed). If not, read
    `nae/engine/logs/nae.log` and the container logs.
    - `curl http://localhost:8888/manage/health` — admin.
@@ -131,9 +144,8 @@ module work.
 3. The cluster has two realms (see "Realms" under Rules): `Admin` for the
    administrators and `app-users` for the users of the application. The
    frontend at http://localhost:4200 is for application users only: it has no
-   realm choice on its login screen and logs in to the realm in its
-   `DEFAULT_REALM` variable, so `DEFAULT_REALM=app-users` must be set in `.env`
-   (see "Realms"). The administrator `admin` signs in to the platform admin UI
+   realm choice on its login screen and signs in to the default realm,
+   `app-users` (see "Realms"). The administrator `admin` signs in to the platform admin UI
    at http://localhost:8888 and chooses the realm there. Its password is set in
    `docker-compose.yaml` (`netgrif.admin.setup.admin.password`, a local dev
    default). The frontend is a single-page app: the browser calls the gateway on
@@ -151,14 +163,12 @@ module work.
 **Approval.** Anything that changes the local NAE or the machine needs user
 approval first: deploying a process, uploading or deploying an application
 package (`upload_application`, `deploy_application`), creating a case,
-executing a task, creating or deleting users, creating a realm, switching the
-active realm, assigning roles, writing `.env`,
+executing a task, creating or deleting users, assigning roles, writing `.env`,
 copying/removing a module, adding/removing a plugin in `include:`, building or
 starting plugin images, restarting or recreating containers. Read-only
 calls (validate, list) don't. Never delete
 Docker volumes or data. One exception: the final "Admin roles" step below needs
-no approval (the realm switch to `Admin` and back and `assign_role` for the
-`admin` account only).
+no approval (role assignment for the `admin` account only).
 
 **Credentials.** The `admin` password is a secret. Read it from
 `docker-compose.yaml` (`netgrif.admin.setup.admin.password`) only when needed,
@@ -167,52 +177,48 @@ the hand-off message to the user (see "Hand-off to the user"), where you give it
 as the login. The same value is used by the MCP plugin.
 
 **Test users.** Role tests use disposable users that you create (with the
-`mcptest_` prefix) in the realm `app-users` (see "Realms") and their
-impersonation tokens. Create them with `password: "password"` (the local dev
-password; it is never returned, so you must pass it to know it for the hand-off,
-unless the user names another one). Never test with the `admin` user or existing
-users. Treat tokens like the password: never write them into
-files, commits, reports or chat output. After every test scenario delete the
-test cases you created; deployed processes and the menu stay.
+`mcptest_` prefix) in the realm `app-users` (see "Realms") with
+`workarounds/nae.sh create-user` (password `password`, the local dev password,
+unless the user names another one), and act as them with
+`workarounds/nae.sh as <user> ...` (a real sign-in through the gateway, so role
+permissions apply). Do not create test users with the MCP `create_user` (BYPASS
+W3). Never test with the `admin` user or existing users. Never write session
+tokens into files, commits, reports or chat output (`nae.sh` never prints
+them). After every test scenario delete the test cases you created; deployed
+processes and the menu stay.
 
-**Realms.** The cluster ends with exactly two realms: `Admin` (default and
-administrators; every user in it is an administrator, so role assignments there
-have no effect on a test) and `app-users` (the users of the application).
+**Realms.** The cluster ends with exactly two realms: `Admin` (administrators;
+every user in it is an administrator, so role assignments there have no effect
+on a test) and `app-users` (the users of the application, and the default realm).
 
-- Before you create the first test user, call `list_realms`. If `app-users` is
-  missing, create it with `create_realm` (name `app-users`) and make it the
-  active realm. Create every user from then on in this realm. Never create any
-  other realm.
-- The MCP works in one active realm: `create_user`, `get_user`, `assign_role`
-  and impersonation tokens act in it (`current_realm`, `switch_realm`). It is
-  shared by all MCP clients and falls back to `Admin` when the plugin restarts.
-  A token works only in the realm of its user. Check `current_realm` is
-  `app-users` before every user operation, and switch back at once after any
-  work in `Admin`.
-- The frontend logs in to the realm of its `DEFAULT_REALM` variable. After
-  creating `app-users` write `DEFAULT_REALM=app-users` into `.env` (create the
-  file from `.env.example` if needed; `docker-compose.yaml` reads it for the
-  `frontend` service, check with `docker compose config`) and recreate the
-  frontend with approval (`docker compose up -d frontend`), so the test users can
-  sign in there.
+- The compose job `realm-init` (BYPASS W2) creates `app-users`, gives it Basic
+  sign-in and makes it the default realm, on every `docker compose up`. You do
+  not create realms. Check with `workarounds/nae.sh realms`: `app-users` must
+  have `"defaultRealm":true`. If not, read `docker compose logs realm-init`.
+- Why the default realm matters: the worker looks users up without a realm, so
+  an `actorList` or `actor` value set from a user id (for example
+  `[useCase.author.id]`) works only for users of the default realm; others fail
+  with `Group [...] does not exist`. The frontend 7.1.0 has no realm field and
+  ignores `DEFAULT_REALM`, so it also signs in to the default realm (with the
+  sign-in fix BYPASS W1). `admin` still signs in, because the admin UI and the
+  MCP plugin name the realm `Admin`.
 - Do not change `NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_REALM_ID` of the MCP
   plugin: it is the realm of the admin account.
-- Delete no realm. `app-users` stays like the deployed processes.
+- Never create another realm and delete no realm.
 
 **Admin roles.** The `admin` account does not get the roles of processes
 automatically. As the last step of an implementation (after the last deploy and
 test, not after every replacement of a process), and only if its roles changed:
 
 1. Collect the `stringId` of the roles of all deployed processes of the
-   application (`list_process_roles`) and of the global roles they use
-   (`list_global_roles`).
-2. `switch_realm` to `Admin` and read the roles of `admin` with `get_user`.
+   application and of the global roles they use (`workarounds/nae.sh roles`).
+2. Read the roles of `admin`: `workarounds/nae.sh users Admin` gives its id,
+   `workarounds/nae.sh user Admin <id>` its `processRoles`.
 3. If `admin` already has all these `stringId` values, change nothing. A
    replaced process has new `stringId` values for its local roles, so a
    replacement counts as a change.
-4. Otherwise call `assign_role` for `admin` with the union of its existing
-   roles and these roles (`assign_role` replaces the whole set).
-5. Always `switch_realm` back to `app-users` and check `current_realm`.
+4. Otherwise `workarounds/nae.sh assign-roles Admin <id> <ids...>` with the
+   union of its existing roles and these roles (it replaces the whole set).
 
 This step needs no approval. Say in the report whether the roles were assigned
 or left unchanged.
@@ -225,6 +231,12 @@ the text of the result, not the flag. Test users therefore stay behind; list the
 `app-users`) and do not claim cleanup that did not happen. Future fix: add a
 user-delete endpoint to the admin image, then implement `delete_user` in the
 plugin. This is tracked in `TODOs.md`.
+
+**Known gap: data by id.** The engine REST API returns task data
+(`GET /api/task/{id}/data`) and cases (`GET /api/workflow/case/{id}`) to any
+signed-in user who knows the id, without checking roles (cluster 1.1.0). A
+field hidden from a role is hidden in its forms, not on the API. Say so in the
+report when a requirement asks to hide data from a role.
 
 **Processes.**
 
@@ -326,7 +338,7 @@ A change is done only when the relevant checks pass and you have seen the output
 
 | Change           | Check                                                                                                             |
 |------------------|-------------------------------------------------------------------------------------------------------------------|
-| Cluster config   | `docker compose config`; admin (:8888), gateway (:8080), search node (:8600) and plugin (:8700) health return `UP`; `list_nodes` returns `NETGRIF Admin`, `NETGRIF Root Worker` and `Netgrif Gateway`, all RUNNING; the memory limits and `JAVA_TOOL_OPTIONS` of the Java services show in `docker compose config`, and after the start no container has `State.OOMKilled` true (`docker inspect`) |
+| Cluster config   | `docker compose config`; admin (:8888), gateway (:8080), search node (:8600) and plugin (:8700) health return `UP`; `list_nodes` returns `NETGRIF Admin`, `NETGRIF Root Worker` and `Netgrif Gateway`, all RUNNING; the memory limits and `JAVA_TOOL_OPTIONS` of the Java services show in `docker compose config`, and after the start no container has `State.OOMKilled` true (`docker inspect`); `docker compose logs realm-init frontend` shows the `BYPASS W1`/`W2` lines and `workarounds/nae.sh realms` shows `app-users` as the default realm |
 | Process / action | `validate_process` (with `appId`) and `validate_action`, then a live scenario with the `test-process` skill       |
 | Plugin           | `mvn -f plugins/<artifactId>/pom.xml clean package` (entry points found), `docker compose config --quiet`, run with approval, container `healthy` and registered, call it from an action |
 | Module           | `mvn -f modules/<artifactId>/pom.xml clean package`, deploy with approval, check NAE logs, call it from an action |

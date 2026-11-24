@@ -72,7 +72,9 @@ Replace `hello_world`, the identifiers, names and icons with real ones.
                     if (dashboardCase == null) {
                         dashboardCase = createDashboardManagement(new com.netgrif.application.engine.objects.workflow.domain.menu.dashboard.DashboardManagementBody("main_dashboard", i18n("Main", ["sk": "Hlavná", "en": "Main"])))
                     }
-                    def items = new LinkedHashMap(dashboardCase.dataSet["dashboard_item_list"].options ?: [:])
+                    // typed copy: validate_action rejects new LinkedHashMap(Object) under static type checking
+                    Map existing = (Map) (dashboardCase.dataSet["dashboard_item_list"].options ?: [:])
+                    def items = new LinkedHashMap(existing)
                     items[tileCase.stringId] = tileCase.title
 
                     def dashboard = new com.netgrif.application.engine.objects.workflow.domain.menu.dashboard.DashboardManagementBody()

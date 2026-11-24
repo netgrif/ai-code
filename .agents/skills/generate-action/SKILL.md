@@ -153,9 +153,15 @@ assign and finish.
 Reported from an agent test run on the 1.1.0 cluster (2026-11-23/24) and not yet
 reproduced: `loggedUser()` and `Date.format(...)` failed at run time inside
 actions although validation passed. Avoid them, or check them in a live
-scenario and read `nae/engine/logs/nae.log`. A user picked into an `actorList`
-field from the realm `app-users` could not be saved (`Group [...] does not
-exist`); a personal group of the user worked instead.
+scenario and read `nae/engine/logs/nae.log`.
+
+Checked on cluster 1.1.0 (2026-11-24): `change <actorList> value { [userId] }`
+looks the user up with `findById(id, null)`, that is in the default realm, and
+falls back to a group lookup. For a user of a non-default realm it fails with
+`Group [...] does not exist`. Fix it in the cluster, not in the action: make
+`app-users` the default realm (see AGENTS.md, "Realms"). Do not use the user's
+personal group instead: an action cannot tell it from the shared
+"Default system group" without a hard-coded id.
 
 Checked on the 1.1.0 cluster and fine: an action in a `caseEvents` `create` event
 (phase `post`) works; the earlier note that it breaks case creation does not hold.

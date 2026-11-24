@@ -157,8 +157,9 @@ shortcut and report it afterwards.
       also across applications. Redeploys while iterating use `replaceExisting`
       and leave the process version unchanged (see `test-process`). When the
       process has role permissions or `actorRef` bindings, Stage 2 includes role
-      scenarios with impersonated test users. Every scenario cleans up its test
-      cases and users; the processes stay deployed.
+      scenarios with test users signed in through the gateway
+      (`workarounds/nae.sh`). Every scenario cleans up its test cases; the
+      processes and test users stay.
 9. **Review** against the checklist in `references/modeling-principles.md`
    (it includes the indexed fields). Fix violations or list them with a
    reason. Per-user visibility (R6) is

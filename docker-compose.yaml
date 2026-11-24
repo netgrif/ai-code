@@ -41,10 +41,17 @@ services:
 
   frontend:
     image: netgrif/application-engine-frontend:7.1.0
+    # BYPASS W1 (workarounds/README.md): the 7.1.0 bundle signs in with GET, the
+    # 1.1.0 admin accepts only POST. Switch the compiled config to BasicWithRealm
+    # before nginx starts. Remove with a frontend image that signs in with POST.
+    entrypoint: [ "sh", "-c", "sh /workarounds/frontend-login.sh && exec /docker-entrypoint.sh nginx -g 'daemon off;'" ]
     ports:
       - "4200:80"
     environment:
-      DEFAULT_REALM: "${DEFAULT_REALM:-Admin}"
+      # Not read by the 7.1.0 image (it signs in to the default realm, see W2).
+      DEFAULT_REALM: "${DEFAULT_REALM:-app-users}"
+    volumes:
+      - ./workarounds/frontend-login.sh:/workarounds/frontend-login.sh:ro,z
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:80" ]
       interval: 10s
@@ -53,6 +60,28 @@ services:
     depends_on:
       nae-gateway:
         condition: service_healthy
+      realm-init:
+        condition: service_completed_successfully
+    networks:
+      - netgrif-platformnet
+
+  realm-init:
+    # BYPASS W2 (workarounds/README.md): realm app-users with Basic sign-in as the
+    # default realm. The admin creates only the realm Admin; a new realm has no
+    # sign-in method, and the worker finds users only in the default realm.
+    # One-shot and idempotent. Remove when the admin image sets this up itself.
+    image: curlimages/curl:8.11.1
+    entrypoint: [ "sh", "/workarounds/realm-init.sh" ]
+    environment:
+      ADMIN_URL: http://nae-admin:8888
+      ADMIN_PASSWORD: *admin-password
+      APP_REALM: app-users
+    volumes:
+      - ./workarounds/realm-init.sh:/workarounds/realm-init.sh:ro,z
+    depends_on:
+      nae-admin:
+        condition: service_healthy
+    restart: "no"
     networks:
       - netgrif-platformnet
 
@@ -295,7 +324,10 @@ services:
 
   nae-mongodb:
     image: mongo:8.0.3
-    command: [ "--replSet", "rs0", "--bind_ip_all", "--port", "27017" ]
+    # BYPASS W4 (workarounds/README.md): an upload event of a process runs in one
+    # transaction; the default limit of 60 s rolls back menu imports with more
+    # than a few items and leaves their cases in Elasticsearch.
+    command: [ "--replSet", "rs0", "--bind_ip_all", "--port", "27017", "--setParameter", "transactionLifetimeLimitSeconds=300" ]
     hostname: 127.0.0.1
     healthcheck:
       test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'127.0.0.1:27017'}]}) }" | mongosh --port 27017 --quiet
