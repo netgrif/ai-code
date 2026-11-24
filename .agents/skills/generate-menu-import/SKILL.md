@@ -55,6 +55,15 @@ Template and API reference: `references/menu-api.md`.
   (seen on cluster 1.1.0). Split a bigger menu into several imports
   (`menu_import`, `menu_import_<area>`), deploy them one by one, and deploy the
   dashboard import after all of them.
+- Keep the menu uniform: the same view type for the same kind of list, a
+  Material icon on every item, English names in sentence case, order in steps
+  of 10, and one `autoSelect` item per role. The stock frontend's colors come
+  from its compiled CSS (Netgrif blue and orange accent); its config theme is
+  not applied, so do not try to restyle it from a process.
+- Opening a menu item costs 1.5 to 2 s on cluster 1.1.0 whatever the item
+  holds: the worker loads the item's configuration task with about 300 role and
+  160 process lookups to the admin over gRPC (no cache). Fewer, broader items
+  open faster than many narrow ones.
 
 ## Steps
 
@@ -94,7 +103,7 @@ Template and API reference: `references/menu-api.md`.
 | Folder                         | Item with path `/` and identifier `x`; children use path `/x`                                                   | A missing folder is created automatically, named after its path segment (`x`) with icon `folder`, no translations and no roles. Create it explicitly first. |
 | Frontend custom view           | `setUseCustomView(true)`, `setCustomViewSelector("...")`                                                        | Selector of a view built into the frontend container (e.g. `all-cases`, `my-tasks`); it is not created by the menu item.                                    |
 | Cases of a process             | `createDefaultViewBody(body, query, allowedNets, headers)`, `body.setView(view)`                                | Case list chained to a task list.                                                                                                                           |
-| Open one task of a case        | `createSingleTaskViewBody(body, query, transitionId, allowedNets, headers)`                                     | Transition id must exist in the target process.                                                                                                             |
+| Open one task of a case        | `createSingleTaskViewBody(body, query, transitionId, allowedNets, headers)`                                     | Transition id must exist in the target process. Frontend 7.1.0 shows a case list first (one more click) and draws an empty button for a hidden Finish; for a uniform menu prefer `createDefaultViewBody` unless a single task is required. |
 | Create button in the case list | `view.setShowCreateCaseButton(true)`, `setCreateCaseButtonTitle(i18n(...))`, `setRequireTitleInCreation(false)` | Helpers turn it off by default.                                                                                                                             |
 | Roles                          | `body.setAllowedRoles(collectRolesForPreferenceItem([role: processId]))`, same for `setBannedRoles`             | Global role: value `GLOBAL_ROLE`. Empty allowed roles = no role restriction.                                                                                |
 | Order                          | `body.setOrder(10d)`                                                                                            | A `Double`; leave gaps (10, 20, ...).                                                                                                                       |

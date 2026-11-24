@@ -19,7 +19,7 @@ Reply in the language the user writes in.
 | `plugins/<artifactId>/` | Plugin sources, one Maven project per plugin, with its `Dockerfile` and `compose.yaml`                                       |
 | `modules/<artifactId>/` | Java/Spring module sources, one Maven project per module                                                                     |
 | `.agents/skills/`       | Task playbooks for agents (see below)                                                                                        |
-| `workarounds/`          | Marked bypasses (`BYPASS W1`–`W4`) for gaps of platform 1.1.0 and `nae.sh`, the REST helper for realms, users, roles and role tests; see its `README.md` |
+| `workarounds/`          | Marked bypasses (`BYPASS W1`–`W5`) for gaps of platform 1.1.0 and `nae.sh`, the REST helper for realms, users, roles and role tests; see its `README.md` |
 | `.mcp.json`             | MCP servers: `petriflow-mcp` (:3000) and `engine-mcp` (cluster plugin, :8700; needs the running cluster)                    |
 | `.env.example`          | Optional settings (`PUID`, `PGID` for the builder, `DEFAULT_REALM` (not read by frontend 7.1.0), memory limits of the Java services); a real `.env` is git-ignored |
 
@@ -130,8 +130,9 @@ module work.
    search node waits for the admin and root worker; the frontend waits for the
    gateway and the `realm-init` job; the plugin waits for the admin and root
    worker. The stack carries marked workarounds for gaps of platform 1.1.0
-   (`BYPASS W1`–`W4`, listed in `workarounds/README.md`): `realm-init` sets up
-   the realm `app-users`, the frontend gets a sign-in fix, MongoDB a longer
+   (`BYPASS W1`–`W5`, listed in `workarounds/README.md`): `realm-init` sets up
+   the realm `app-users`, the frontend gets a sign-in fix, the MCP plugin
+   reaches the admin through `admin-realm-proxy`, MongoDB gets a longer
    transaction limit. Check them with
    `docker compose logs realm-init frontend | grep BYPASS`.
 2. Wait until the cluster is healthy (no authentication needed). If not, read
@@ -200,8 +201,10 @@ on a test) and `app-users` (the users of the application, and the default realm)
   `[useCase.author.id]`) works only for users of the default realm; others fail
   with `Group [...] does not exist`. The frontend 7.1.0 has no realm field and
   ignores `DEFAULT_REALM`, so it also signs in to the default realm (with the
-  sign-in fix BYPASS W1). `admin` still signs in, because the admin UI and the
-  MCP plugin name the realm `Admin`.
+  sign-in fix BYPASS W1). `admin` still signs in: the admin UI sends the realm
+  `Admin`, and the MCP plugin, which sends none, goes through
+  `admin-realm-proxy` (BYPASS W5), which adds it. A `deploy_process` that fails
+  with "NAE admin login failed with HTTP 401" means the proxy is not in place.
 - Do not change `NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_REALM_ID` of the MCP
   plugin: it is the realm of the admin account.
 - Never create another realm and delete no realm.

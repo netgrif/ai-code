@@ -334,6 +334,29 @@ from the schema (`dataGroup`, `dataRef`, `layout`) of the chosen version.
 - Validate after laying out (`validate_process`), and tell the user the
   grouping you chose in the report.
 
+### Read-only tasks (status, detail, overview)
+
+A transition that only shows data (on a read arc, every `dataRef` visible)
+still gets Finish and Cancel buttons in the frontend, and Finish on a read arc
+just fires the transition again. Give such a transition a `finish` and a
+`cancel` event with an empty `title`, after its data groups:
+
+```xml
+<event type="finish">
+	<id>status_finish</id>
+	<title></title>
+</event>
+<event type="cancel">
+	<id>status_cancel</id>
+	<title></title>
+</event>
+```
+
+The frontend 7.1.0 hides a button whose title is empty in task lists and case
+detail (checked on cluster 1.1.0). A menu item with a single-task view
+(`createSingleTaskViewBody`) still draws an empty button there; prefer a case or
+task view for such tasks (see `generate-menu-import`).
+
 ## Indexed fields (`immediate`)
 
 `immediate="true"` is an attribute of `<data>` (type `xs:boolean`). It copies

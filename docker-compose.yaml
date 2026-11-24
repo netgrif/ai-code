@@ -284,6 +284,25 @@ services:
     networks:
       - netgrif-platformnet
 
+  admin-realm-proxy:
+    # BYPASS W5 (workarounds/README.md): the MCP plugin signs in without a realm,
+    # so with app-users as the default realm (W2) its admin login fails. This
+    # proxy adds X-Realm-Id: Admin when a request has none. Internal only.
+    # Remove with a plugin that sends the realm of its admin account.
+    image: nginx:1.27.3-alpine
+    volumes:
+      - ./workarounds/admin-realm-proxy.conf:/etc/nginx/conf.d/default.conf:ro,z
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "wget -qO- http://127.0.0.1:8888/manage/health | grep -q UP" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      nae-admin:
+        condition: service_healthy
+    networks:
+      - netgrif-platformnet
+
   nae-mcp-plugin:
     image: docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0
     restart: unless-stopped
@@ -291,7 +310,9 @@ services:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
       # Development only: /mcp is not authenticated and acts as the admin account.
       NETGRIF_ENGINE_MCP_IMPERSONATION_ENABLED: 'true'
-      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_BASE_URL: http://nae-admin:8888
+      # BYPASS W5 (workarounds/README.md): through admin-realm-proxy, which adds the
+      # realm header the plugin does not send. Direct: http://nae-admin:8888
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_BASE_URL: http://admin-realm-proxy:8888
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_USERNAME: admin
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_PASSWORD: *admin-password
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_WORKER_NAME: NETGRIF Root Worker
@@ -318,6 +339,8 @@ services:
       nae-admin:
         condition: service_healthy
       nae-engine:
+        condition: service_healthy
+      admin-realm-proxy:
         condition: service_healthy
     networks:
       - netgrif-platformnet
