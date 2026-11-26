@@ -106,8 +106,8 @@ tool.
 |----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 | **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Frontend** (`netgrif/application-engine-frontend:7.0.3`)           | The portal your users work in, at `localhost:4200`                                                                        | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Builder** (`netgrif/application-builder:2.1.1-rc.3`)               | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Builder** (`netgrif/application-builder:2.1.1-local`)              | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.1.2`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **MongoDB, Elasticsearch, Redis**                                    | Data, search and cache                                                                                                    | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Rules for the assistant**                                          | How to build, check and test a Netgrif application, and when to ask you                                                   | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
 | **Your application**                                                 | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example)                       | [`processes/`](processes/README.md)                                                      |
@@ -124,12 +124,12 @@ machine or server: Java runs inside the engine image, the databases in their own
 |---------------------|---------------------------------------------|-------------------------------------------------------------------------|------------------------------|
 | `engine`            | `netgrif/application-engine-with-mcp:7.0.3` | Java 21 (Eclipse Temurin JRE), Spring Boot 4.1, Application Engine 7.0.3 | 8080                         |
 | `frontend`          | `netgrif/application-engine-frontend:7.0.3` | The portal: Netgrif Components 7.0.3 (Angular 17.3)                     | 4200                         |
-| `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
-| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.0.0`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
+| `builder`           | `netgrif/application-builder:2.1.1-local`   | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
+| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.2`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
 | `nae-mongodb`       | `mongo:8.0.3`                               | MongoDB, single-node replica set `rs0`; limit 2 CPUs, 2 GB RAM          | 27017                        |
 | `nae-elasticsearch` | `elasticsearch:8.19.15`                     | Elasticsearch, single node, security off; limit 1.5 CPUs, 1.5 GB RAM     | 9200, 9300                   |
 | `nae-redis`         | `redis:8`                                   | Redis, cache and sessions                                               | 6379                         |
-| `init-perms`        | `busybox:1.37`                              | A one-off job that sets the owner of `nae/engine/logs` and `storage`    | none                         |
+| `init`              | `alpine/openssl:3.5.9`                      | One-off job: owner of `logs` and `storage`, creates JWT keys once       | none                         |
 
 **What you need:**
 
@@ -151,9 +151,14 @@ The stack needs Docker Compose v2 (`docker compose`, not `docker-compose`). The 
 
 - `processes/`: read and written by the builder. It must be owned by you, not by root.
 - `nae/engine/logs/` and `nae/engine/storage/`: written by the engine, which runs as its own user. A short job
-  (`init-perms`) sets the owner when the stack starts. You can read the files, but deleting them needs elevated
+  (`init`) sets the owner when the stack starts. You can read the files, but deleting them needs elevated
   rights: `sudo rm -rf nae/engine/logs/* nae/engine/storage/*` with Docker, or
   `podman unshare rm -rf nae/engine/logs/* nae/engine/storage/*` with rootless Podman.
+- `nae/engine/certificates/`: the key pair the engine uses to sign login tokens (JWT). The same `init` job creates it
+  on the first start and never overwrites it, so you do not have to do anything. It stays on your machine and is
+  not in git: never share or commit it. If you delete it, new keys are created on the next start and everyone has to
+  log in again. Deleting needs the same elevated rights as above (`sudo rm -rf nae/engine/certificates/*`, or
+  `podman unshare rm -rf nae/engine/certificates/*`).
 - `nae/engine/modules/`: modules you build, read by the engine.
 
 On Docker Desktop (Mac, Windows) the builder may report that it cannot write to `processes/`. Then copy

@@ -20,9 +20,9 @@ against the source.
 
 ## Process template
 
-Validated with `validate_process` (Petriflow 1.0.9). `action1` follows
-`processes/menu_import.xml` (items that open frontend custom views),
-`action2` shows a folder with a case list of one process for given roles.
+Validated with `validate_process` (Petriflow 1.0.9). `action1` creates items
+that open frontend custom views, `action2` shows a folder with a case list of
+one process for given roles.
 Replace `hello_world`, the role ids and the headers with real ones.
 
 ```xml
@@ -93,7 +93,7 @@ Notes:
   the menu import.
 - Folders before their children; the parent path must match the folder's
   path plus identifier (`/` + `hello` = `/hello`).
-- `processes/menu_import.xml` uses `createMenuItem(body)`; the template uses
+- `createMenuItem(body)` fails when the item already exists; the template uses
   `createOrUpdateMenuItem(body)` so a re-deploy updates instead of failing.
 
 ## Menu item methods

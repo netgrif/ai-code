@@ -9,17 +9,18 @@ Reply in the language the user writes in.
 
 ## Repository layout
 
-| Path                    | Purpose                                                                                                                      |
-|-------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `docker-compose.yaml`   | Local stack: `engine` (:8080), `frontend` (:4200), `builder` (:4300), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis |
-| `nae/engine/modules/`   | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                             |
-| `nae/engine/logs/`      | NAE logs (mounted from the container), including `nae.log`                                                                   |
-| `nae/engine/storage/`   | NAE storage (mounted from the container)                                                                                     |
-| `processes/<app_name>/` | One folder per application: Petriflow process XMLs and a `README.md`. Shared live with the builder (read-write)              |
-| `modules/<artifactId>/` | Java/Spring module sources, one Maven project per module                                                                     |
-| `.agents/skills/`       | Task playbooks for agents (see below)                                                                                        |
-| `.mcp.json`             | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE)                                             |
-| `.env.example`          | Optional settings (`PUID`, `PGID` for the builder); a real `.env` is git-ignored                                             |
+| Path                       | Purpose                                                                                                                      |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `docker-compose.yaml`      | Local stack: `engine` (:8080), `frontend` (:4200), `builder` (:4300), `petriflow-mcp` (:3000), MongoDB, Elasticsearch, Redis |
+| `nae/engine/modules/`      | Built modules, unzipped here, loaded by NAE at start. Output only, never sources                                             |
+| `nae/engine/logs/`         | NAE logs (mounted from the container), including `nae.log`                                                                   |
+| `nae/engine/storage/`      | NAE storage (mounted from the container)                                                                                     |
+| `nae/engine/certificates/` | JWT key pair, created once by the `init` job on the first start. Secret, git-ignored, never read into reports or copied      |
+| `processes/<app_name>/`    | One folder per application: Petriflow process XMLs and a `README.md`. Shared live with the builder (read-write)              |
+| `modules/<artifactId>/`    | Java/Spring module sources, one Maven project per module                                                                     |
+| `.agents/skills/`          | Task playbooks for agents (see below)                                                                                        |
+| `.mcp.json`                | MCP servers: `petriflow-mcp` (local docker) and `engine-mcp` (needs running NAE)                                             |
+| `.env.example`             | Optional settings (`PUID`, `PGID` for the builder); a real `.env` is git-ignored                                             |
 
 ## How to implement a requirement
 
@@ -76,7 +77,8 @@ and stop before module work.
 
 1. Start the stack from the repository root: `docker compose up -d` (Docker Compose v2). It starts
    the engine, the frontend, the builder, the Petriflow MCP and the databases. A short
-   `init-perms` job fixes the owner of `nae/engine/logs` and `storage` first. The frontend
+   `init` job runs first: it fixes the owner of `nae/engine/logs` and `storage` and, only if
+   `nae/engine/certificates/private.der` is missing, generates the JWT key pair there. The frontend
    waits for a healthy engine.
 2. Wait until NAE is healthy: `curl http://localhost:8080/manage/health` returns
    status `UP` (no authentication needed), or `docker compose ps` shows the
@@ -136,6 +138,8 @@ the test cases and users you created; deployed processes and the menu stay.
 
 **NAE data folders.** `nae/engine/logs` and `nae/engine/storage` belong to the
 engine container (owned by its user). Read logs from there, never write there.
+`nae/engine/certificates` holds the JWT private key: it is created by the `init` job,
+never edit, delete, print or copy its files, and never put them in commits or reports.
 
 **Modules.**
 

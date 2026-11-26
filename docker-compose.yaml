@@ -40,14 +40,40 @@ services:
     networks:
       - netgrif-platformnet
 
-  init-perms:
-    # The engine image runs as uid 10001 and cannot write to folders created by Docker or by you.
-    image: busybox:1.37
+  init:
+    # One-off job, safe to run on every start. The engine image runs as uid 10001 and cannot write
+    # to folders created by Docker or by you. The engine also needs a JWT key pair: it is generated
+    # here on the first start and then kept in nae/engine/certificates (never overwritten).
+    image: alpine/openssl:3.5.9
     user: "0:0"
-    command: [ "sh", "-c", "chown -R 10001:10001 /logs /storage || echo 'chown failed, continuing'" ]
+    entrypoint: [ "sh", "-ec" ]
+    command:
+      - |
+        chown -R 10001:10001 /logs /storage || echo 'chown failed, continuing'
+        C=/certs
+        if [ ! -s "$$C/private.der" ]; then
+          echo "Generating JWT key pair in $$C"
+          T=$$(mktemp -d "$$C/.tmp.XXXXXX")
+          openssl genrsa -out "$$T/keypair.pem" 4096
+          openssl rsa -in "$$T/keypair.pem" -pubout -out "$$T/public.crt"
+          openssl pkcs8 -topk8 -inform PEM -outform DER -nocrypt -in "$$T/keypair.pem" -out "$$T/private.der"
+          rm "$$T/keypair.pem"
+          mv "$$T/public.crt" "$$C/public.crt"
+          mv "$$T/private.der" "$$C/private.der"
+          rmdir "$$T"
+        else
+          echo "JWT key pair exists, skipping"
+        fi
+        if [ ! -s "$$C/public.crt" ]; then
+          openssl pkey -inform DER -in "$$C/private.der" -pubout -out "$$C/public.crt"
+        fi
+        chown -R 10001:10001 "$$C"
+        chmod 600 "$$C/private.der"
+        chmod 644 "$$C/public.crt"
     volumes:
       - ./nae/engine/logs:/logs:z
       - ./nae/engine/storage:/storage:z
+      - ./nae/engine/certificates:/certs:z
     restart: "no"
     networks:
       - netgrif-platformnet
@@ -93,7 +119,7 @@ services:
       - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:ro,z
       - ./nae/engine/certificates:/opt/netgrif/engine/certificates:z
     depends_on:
-      init-perms:
+      init:
         condition: service_completed_successfully
       nae-mongodb:
         condition: service_healthy

@@ -983,6 +983,7 @@ cython_debug/
 
 nae/engine/storage
 nae/engine/logs
+nae/engine/certificates
 
 nae/nae-frontend/.angular
 nae/nae-frontend/node_modules
