@@ -1,11 +1,11 @@
 ---
 name: generate-menu-import
 description: Generates a menu import process, a Petriflow process whose only logic is an upload event action that creates the application menu (menu items, folders and their views) through the NAE menu API. Use when the user wants to create or change the app menu, menu items, side navigation entries, folders in the menu, which processes or views appear in the menu and for which roles, or mentions "menu import" or MenuItemBody. Not for designing business processes (use generate-process), for dashboard items (use generate-dashboard-items) or for only validating or deploying (use test-process).
-compatibility: Requires the petriflow-mcp MCP server (http://localhost:3000/mcp). Live tests also need a running local NAE with the engine-mcp MCP (http://localhost:8080/mcp).
+compatibility: Requires the petriflow-mcp MCP server 1.1.2 or newer (http://localhost:3000/mcp). Live tests also need the local platform cluster with the engine-mcp plugin (http://localhost:8700/mcp).
 metadata:
   tested: false
   mcp-server: petriflow-mcp, engine-mcp
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Generate Menu Import
@@ -69,13 +69,13 @@ Template and API reference: `references/menu-api.md`.
    per top-level menu section, folders before their children. Write and
    check the Groovy by the rules of the `generate-action` skill (that skill
    covers data and task events; the upload event here follows the same
-   rules).
+   rules, including `validate_action`).
 5. **Application README.** Add the menu import to
    `processes/<app_name>/README.md` (template in `generate-process`) and put
    it last under "Deploy order". Add it to the process map as a node with a
    `-.->` arrow labelled `menu` to each process it exposes. Give it a row in the
    Processes table with its `Hash` (rule in `generate-process`).
-6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` until clean); Stage 2 only with the
+6. **Validate and test** with the `test-process` skill: Stage 1 (`validate_process` with `appId` until clean); Stage 2 only with the
    user's approval,
    deploying referenced processes first. Then check the menu at
    http://localhost:4200 and errors in `nae/engine/logs/nae.log`.
@@ -109,11 +109,11 @@ Result: one validated menu import, the README and a report.
 
 ## References
 
-- `references/menu-api.md`: the menu part of `ActionDelegate` for NAE 7.0.3 (signatures, body classes, role map format,
+- `references/menu-api.md`: the menu part of `ActionDelegate` for NAE 7.1.0 (signatures, body classes, role map format,
   deprecated methods) and the
   process template. Read it before step 4.
 - Source of truth when the reference is not enough:
-  `../application-engine` at tag `v7.0.3`, file
+  `../application-engine` at tag `v7.1.0`, file
   `application-engine/src/main/groovy/com/netgrif/application/engine/petrinet/domain/dataset/logic/action/ActionDelegate.groovy`
   and package `com.netgrif.application.engine.objects.workflow.domain.menu` in
   `nae-object-library`. Check the version matches the NAE image in
@@ -168,4 +168,5 @@ items that were created.
 - `defaultRole` or `anonymousRole` left `true`, so users can create cases of
   the menu import.
 - Empty `try/catch` around items, hiding failures.
+- Groovy that was not checked with `validate_action`.
 - Unused leftovers from copied examples (debug logs, unused variables).

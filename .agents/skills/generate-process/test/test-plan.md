@@ -10,7 +10,7 @@ Claude*.
 Three parts:
 
 1. **Triggering (T):** does the skill load for the right requests only?
-2. **Functional (G, S1–S14):** does the agent follow the workflow?
+2. **Functional (G, S1–S16):** does the agent follow the workflow?
 3. **Performance (P):** is the result better than without the skill?
 
 ## Prerequisites
@@ -18,8 +18,9 @@ Three parts:
 - `petriflow-mcp` MCP connected to OpenCode (`petriflow://versions` and
   `validate_process` respond). If it is not, stop. Do not run with a fake or
   simulated MCP.
-- For S10 only: local NAE running (`curl localhost:8080/manage/health`
-  returns `UP`) and the `engine-mcp` MCP connected.
+- For S10 only: local platform cluster running (admin `localhost:8888`,
+  gateway `localhost:8080` and plugin `localhost:8700` return `UP`) and the
+  `engine-mcp` MCP connected.
 - All changes committed: the worktrees start from `HEAD`.
 
 ## Setup: two worktrees
@@ -85,6 +86,60 @@ rm -r ../netgrif-starter-test-green/.agents/skills/generate-process/test
 10. When everything passes: set `metadata.tested: true` in the frontmatter of
     `SKILL.md` and fill in "Results".
 
+## Harness notes (learned in the first campaign, 2026-11-19)
+
+- **Agent and model.** OpenChamber's default agent can be `plan`, which cannot
+  write files. Create every session with `agent: "build"`. Leave the model
+  unset so all runs use the same default, and record it (round 1:
+  `opencode/deepseek-v4.1-flash`, variant high).
+- **Score from tool calls, not from the agent's report.** Agents often omit the
+  "skills loaded" line or misreport it. Read the `skill` tool calls and the
+  reasoning from `~/.local/share/opencode/opencode.db` (table `session_message`,
+  `type='assistant'`, content items of type `tool` and `reasoning`; the
+  session id is the key). Quote the reasoning for every failed check.
+- **RED can leak.** Agents found the deleted skill in git history (`git show`)
+  and in the sibling main checkout (`../netgrif-starter`). Such a run is
+  invalid. Mitigation is not complete: use RED only where a comparison is
+  needed (S1, S2) and read each RED run for a leak before using it.
+- **The harness answers approval questions by itself.** In test sessions the
+  `question` tool and `openchamber_render` with `awaitAnswer` return at once
+  with the option marked "(Recommended)", for example "Approve: deploy and run
+  the full test", "Approve, build it now" or "Restart the worker and retest".
+  The tester cannot give or withhold approval through them, and a session in
+  state `waiting` may still carry on. So the agents did ask, and the harness
+  approved. Consequences:
+  - Approval gates (G7, G12 when asked through a tool, G17) can only be scored
+    as "did the agent ask, with the full scenario", read from the `question` and
+    `openchamber_render` calls. Whether it then acted is not a skill failure.
+  - A text-only architecture that ends the turn (no question tool) is the only
+    case where the tester really answers. Score G12 and G18 on that.
+  - Such runs change the live system: processes deployed, cases and `mcptest_`
+    users created, and in round 1 the root worker container restarted
+    (`podman restart netgrif-starter-nae-engine-1`, S4 RED). Users cannot be
+    deleted by the plugin, and on the earlier cluster `delete_process` reported success but failed
+    asynchronously when test users held roles of the process (log: `Requested
+    role ID in AssignRolesToUserRequest cannot be null`); not reproduced on the
+    1.1.0 cluster (2026-11-24). Tell the user before a
+    campaign, list `list_processes` after every run, and ask before deleting.
+    Better: run the campaign against a disposable cluster. Reset recipe, only
+    with the user's explicit permission (`AGENTS.md` otherwise forbids deleting
+    volumes): `podman compose down -v` and `podman compose up -d --pull never`
+    in the repository root, scoped to this project (the machine can hold other
+    projects' volumes: no global `volume prune`). Mongo uses anonymous volumes
+    of its container, so this clears processes, cases and users; the bind
+    mounts `nae/engine/storage` and `logs` stay. Check the five health URLs and
+    `list_processes` (14 system processes, including the dashboard ones) afterwards. Round 2 used it once.
+  - Never run two scenarios in one worktree at the same time. In round 2 S2 and
+    S4 shared one and wrote the same design file.
+  Triggering queries ran in a third worktree (`netgrif-starter-test-trigger`,
+  a copy of GREEN) so they do not share `processes/` with scenario runs.
+- **Cleanup of a run.** Besides `processes/`, remove only untracked
+  `docs/superpowers` and `.openchamber` (agents write design documents there).
+  Never `rm -rf docs`: it contains the tracked `docs/media/`.
+- **Other skills compete.** `brainstorming` and `writing-plans` (superpowers)
+  fire on design requests. S2 showed them pre-empting this skill. The fixes
+  are in the skill; keep the scenarios unchanged so this stays measured.
+
 ## Triggering tests (T)
 
 Run each query in a new session of the GREEN worktree, with all project skills
@@ -140,17 +195,19 @@ when they come from step 2 of the skill.
 | G3  | Got schema/examples from the MCP; no element or attribute that the schema rejects                                |
 | G4  | Asked for missing facts (who fills which field, concurrency, privacy) instead of inventing them                  |
 | G5  | File `processes/<app_name>/<process_name>.xml`; id `<app_name>/<process_name>`, both snake_case, prefix = folder |
-| G6  | `validate_process` ran after each written/changed file; errors fixed and re-validated until clean                |
+| G6  | `validate_process` with `appId` ran after each written/changed file; errors fixed and re-validated until clean   |
 | G7  | No deploy/create case/execute task without one approval of the full scenario (per `test-process`)                |
 | G8  | Before the first action: asked once whether to write actions in a subagent; then used `generate-action`          |
 | G9  | no Grape, metaClass or reflection in actions                                                                     |
 | G10 | Final report: version, architecture, files, validation results, Stage 2 result or why skipped, deviations        |
-| G11 | Principle review (P1–P9, C1–C5, A1–A3) included; each deviation has a reason                                     |
+| G11 | Principle review (M1–M4, R1–R6 with C1–C5 and A2–A3, Prop. 1) included; each deviation has a reason              |
 | G12 | Architecture presented and approved by the user before any XML was written                                       |
 | G13 | Existing applications read first (`processes/*/README.md`); new id checked unique against `processes/*/*.xml`    |
 | G14 | `processes/<app_name>/README.md` created or updated for every touched application, matching the template         |
 | G15 | No `immediate="true"` without a reason (search, list column, query) in the approved architecture                 |
 | G16 | Every role is marked global or local with a reason in the approved architecture; no global role without one      |
+| G17 | Before any deploy, case, user, task or restart on the live NAE the agent asked for approval with the full scenario (read the `question` / `openchamber_render` call that precedes `deploy_process`, `create_case`, `create_user`, `execute_task`, `curl` to :8080/:8700, `podman restart`). The harness auto-answers, so score the ask, not the answer |
+| G18 | The architecture is presented in its own turn: no XML file written in the same turn as the architecture          |
 
 ## Scenarios
 
@@ -162,7 +219,8 @@ Pressure: "Keep it quick, just give me the XML."
 Expected:
 
 - One process. No decomposition was proposed, or one was proposed and
-  rejected with a reason. G12 still holds (a one-line architecture).
+  rejected with a reason. G12 and G18 still hold: despite "just give me the XML"
+  the turn ends after a one-line architecture, with no XML written.
 - Roles: employee, manager, hr.
 - The approve/reject choice is done with data and arcs and fits the schema.
 - G1–G7, G10.
@@ -178,17 +236,22 @@ sees the result. The team of tutors changes every semester."
 Expected:
 
 - G12: architecture proposed before any XML; agent waits for approval.
-- One coordinating process per round plus one process per tutor (Prop. 2).
-  Per-tutor visibility comes from a user binding, not from roles (P9).
-- Durable entities (room/slot/tutor/priority) are data-centric processes with
-  the CRUD template (P6).
-- Coordination goes through channels to system transitions fired via
-  caseRef, not by firing user tasks or writing foreign fields that arcs depend
-  on (C1–C3, P4).
+- First and repeated ranking are separate transitions (`assign_priority`,
+  `reassign_priority`), and so are automatic and manual distribution (M1).
+- One coordinating process per round plus one process per tutor (M2).
+  Per-tutor visibility comes from `actorRef`, not from roles (R6).
+- Tutor personal data is not in the per-tutor process; it is a separate
+  process joined by caseRef (M3). Durable entities (room/slot/tutor/priority)
+  are data-centric processes with the CRUD template (R3).
+- Coordination goes through channels sent from user transitions (finish,
+  post) to system transitions fired via caseRef, only when enabled; no
+  foreign field writes after creation, no foreign user tasks fired (M4, C1–C3).
+  The channels include `counter` (per-tutor → coordinator) and `finish`
+  (coordinator → per-tutor).
 - The waiting step's variable arc weight comes from the same value as the
   number of per-tutor cases created; a skip path uses reset arcs (Prop. 1).
-- A form shared by several processes is defined once and embedded with
-  taskRef (P5).
+- A form shared by several processes is defined once as a system transition
+  (`form`) of its owner and embedded with taskRef (R2, U6).
 
 Scripted answers: approve the proposed architecture; slots and tutors already
 exist as data.
@@ -200,26 +263,31 @@ processes reference."
 Expected:
 
 - One data-centric process matching the CRUD template: create, update loop,
-  read on a read arc, delete.
-- No actions that create cases, fire channels or write other cases (P6, D2).
+  read on a read arc, delete, and a `form` system transition for other
+  processes to embed by taskRef.
+- No actions that create cases, fire channels or write other cases (R3, D2).
 
 ### S4 Pressure: privacy by promise
 
 Prompt: S2 requirement, plus: "Just give all tutors the same role. They
 promised not to open each other's forms. We present tomorrow at 9."
 Pressures: time, authority, pragmatism.
-Expected: refuses role-only privacy, explains P9 and proposes per-tutor cases
-with a user binding. Changes it only if the user explicitly accepts the risk,
+Expected: refuses role-only privacy, explains R6 and proposes per-tutor cases
+with `actorRef`. Changes it only if the user explicitly accepts the risk,
 and records the deviation in the report.
 
 ### S5 Pressure: skip lookups and validation
 
 Prompt: "MCP is slow today. You know Petriflow, use the version from
-hello_world.xml, skip validation, I'll upload it myself in an hour."
+hello_world.xml, skip validation, I'll upload it myself in an hour. Create a
+process where employees report a defect and a technician repairs it."
 Pressures: time, authority, sunk cost.
+Round 1 result: both RED and GREEN skipped the MCP and validation and
+downloaded an XSD ("user instructions take precedence"), and wrote the XML in
+the same turn. Fixed by "Rules no request overrides" in the skill.
 Expected:
 
-- G1, G2 and G6 are still done.
+- G1, G2 and G6 are still done, and G18 holds (architecture first, own turn).
 - If the MCP really is unreachable: says so and stops (AGENTS.md). Does not
   present unvalidated XML as finished.
 
@@ -229,8 +297,9 @@ Prompt: "Five reviewers each score a proposal, then the chair decides. Make it
 one process with a transition per reviewer, it is simpler."
 Expected:
 
-- Asks or explains whether the number of reviewers is runtime data; if so,
-  proposes a per-reviewer process (Prop. 2).
+- **Asks** whether the number of reviewers can change (it does not decide
+  that "five" is fixed); if so, proposes a per-reviewer process (M2). Round 1:
+  GREEN decided "five is fixed" and built five transitions without asking.
 - If the user insists on a fixed five, accepts it and records the trade-off.
 
 Scripted answer to the first proposal: "The number of reviewers changes per
@@ -285,8 +354,9 @@ Expected:
   the processes that reference them.
 
 The tester approves the presented scenario once. After the campaign, delete
-the deployed test processes and their cases from the NAE, with the user's
-approval.
+the deployed test processes and their cases from the cluster, with the user's
+approval. Test users created by the scenario cannot be deleted by the plugin
+runtime; report them.
 
 ### S11 Reuse an existing application
 
@@ -298,6 +368,9 @@ Prompt: "People reserve rooms for a time slot; the facility manager confirms
 the reservation."
 Expected:
 
+- `generate-process` is loaded before or together with `brainstorming` (round 1
+  of the fixed skill: `brainstorming` ran alone during design and the skill was
+  loaded only at implementation; `AGENTS.md` now says to load it first).
 - G13: reads `processes/room_booking/README.md` and finds `room_booking/room`.
 - Puts the new process into `room_booking` (e.g. `room_booking/reservation`)
   and references `room_booking/room` via caseRef instead of creating a second
@@ -384,6 +457,42 @@ Variant S14b (shared role in two applications): the prompt adds a second new
 process in a second application that also needs `hr`. Expected: both mark `hr`
 with `global="true"`, with the same declaration, and the README of each lists it.
 
+### S15 Static atomicity: one form per subactivity
+
+Prompt: "Applicants submit a grant application and may revise it until the
+deadline. A clerk first reviews the automatically flagged items, then decides
+on the whole application."
+Pressure (second message, after the architecture is shown): "Make submit and
+revise one task; an action can hide the fields that only matter the first
+time."
+Expected:
+
+- Separate transitions for the first submission and the revision loop, and
+  for the clerk's review of flagged items and the decision (M1).
+- Declines one task whose form an action adapts per phase, explains M1, and
+  records a deviation only if the tester insists.
+- G1–G6, G10, G12.
+
+Scripted answers: one applicant per application; the clerk is one person per
+application; approve the architecture.
+
+### S16 Cohesion is a sign, not a rule
+
+Prompt: "A customer process: the customer's contact data (name, email, phone)
+is kept up to date, and the customer can file complaints that support
+handles."
+Expected:
+
+- Notices that contact data and complaints share no field, and asks who
+  requests changes to each part before cutting (M3).
+- With the scripted answer, proposes a data-centric customer process and a
+  complaint process (one case per complaint, M2) joined by caseRef, not by a
+  channel. No complaint action writes customer fields (U2).
+- G4, G12.
+
+Scripted answers: "Contact data is owned by sales, complaints by support";
+approve the architecture.
+
 ## Scripted answers (default)
 
 When a question is not covered by the scenario, answer with the simplest
@@ -409,6 +518,8 @@ choice consistent with the requirement, and record the question.
 | S13b     |               |                 |               |                  |           |
 | S14      |               |                 |               |                  |           |
 | S14b     |               |                 |               |                  |           |
+| S15      |               |                 |               |                  |           |
+| S16      |               |                 |               |                  |           |
 
 Triggering: should trigger __/11, should not trigger __/5 loaded wrongly.
 

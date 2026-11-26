@@ -10,11 +10,16 @@ modules/
     └── src/
 ```
 
-A module is a Java 21 Spring Boot project that is loaded into the Application Engine at start. Its `@Service` beans
+A module is a Java 21 Spring Boot project that is loaded into an Application Engine worker at start. Its `@Service` beans
 annotated with `@ModuleService("<group>")` can be called from process actions as
-`NaeModule.<group>.<serviceBeanName>.<method>(...)`. Use a module only when the logic cannot be expressed as a process or
-action. For the full guide, see the
+`NaeModule.<group>.<serviceBeanName>.<method>(...)`. Java code that actions call is normally a
+[plugin](../plugins/README.md); use a module only when a plugin cannot do it (the code must call another plugin or a
+module, use engine internals the plugin API does not expose, or run inside the worker's own call). For the full guide,
+see the
 [custom module documentation](https://platform.netgrif.cloud/ecosystem/modules/custom-module).
+
+Build it against NAE `7.1.0`, the version of the root worker image in `docker-compose.yaml`. In a cluster a module runs
+in the worker that has it, so put it into every worker that needs it.
 
 > **Requirement:** developing a module needs **Java 21 and Maven** installed on your machine. They are not needed to
 > write processes only.

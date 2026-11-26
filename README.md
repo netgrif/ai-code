@@ -4,7 +4,7 @@
 assistant. You describe what the business needs; the assistant generates a complete Netgrif application in
 [Petriflow](https://petriflow.org/#/) (workflow, data, forms, roles, actions and the menu), checks it and runs it.
 Login, the portal, task lists and the database are already there. If you need more, extend it with your own Java
-modules, or with your own Angular frontend through the
+plugins (or modules), or with your own Angular frontend through the
 [frontend starter](https://github.com/netgrif/nae-frontend-application-starter).
 
 Netgrif orchestrates the process: each step is done by a person, an existing system or an AI agent, and a person
@@ -12,7 +12,8 @@ always has the last word. Whatever an agent cannot solve goes to a person.
 [Watch: AI agents inside real processes](https://www.youtube.com/watch?v=Msmqxwey94g)
 
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and any AI coding assistant.** Everything
-else runs in containers: no Java, Node or database to install.
+else runs in containers: no Java, Node or database to install. Only if you write your own Java plugins or modules
+you need Java 21 and Maven 3+.
 
 [![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)](https://youtu.be/LpdUfdaEqT4)
 
@@ -33,11 +34,13 @@ cd <your-app>
 docker compose up -d
 ```
 
-The first start downloads the images (the engine, the frontend, the databases) and takes a few minutes; later starts
-take seconds. Netgrif runs at **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP`.
-Log in as
-`admin`; its password is set in [`docker-compose.yaml`](docker-compose.yaml)
-(`netgrif.engine.security.auth.admin-password`). Change it there before you share the machine with anyone.
+The first start downloads all images (platform admin, gateway, root worker, search node, frontend, MCP and databases)
+from Docker Hub; no login is needed. It takes a few minutes; later starts take seconds. Netgrif runs at
+**http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP` (that is the gateway). That
+frontend is for the users of your application (realm `app-users`, created by the assistant together with its test users).
+The administrator `admin` signs in at **http://localhost:8888** and chooses the realm there; its password is set in
+[`docker-compose.yaml`](docker-compose.yaml) (`netgrif.admin.setup.admin.password`). Change it **before the first
+start**: the admin stores it and the MCP plugin logs in with the same value.
 
 **3. Describe what the business needs.** Open the folder in any AI coding assistant: Claude Code, Codex, Cursor,
 GitHub Copilot, Gemini CLI or any other. There is nothing to configure. Hand it a Word document, an e-mail or a diagram
@@ -50,15 +53,16 @@ already have, or tell it the way you would tell a colleague:
 > Build it on this platform and prove it runs in the engine before you tell me it is done.
 
 The assistant writes the application into `processes/<app_name>/`, validates it, shows you the plan and deploys it
-after your yes. Then it tells you where to sign in.
+after your yes. Then it tells you which test user to sign in as.
 
 **4. Use it, update it if needed.** Work in the app and ask for changes in plain words. Each change is a new version;
 running cases keep theirs. The last prototype is the app. You can also open and edit the processes visually in the
 **builder** at **http://localhost:4300**. It edits the same files in `processes/`, so reload it after the assistant has
 changed a process, and do not edit one process in both places at once.
 
-**5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Deploy them to your
-company's Netgrif portal: upload them in its **Workflow** view, or let the assistant deploy them after your yes.
+**5. Deploy it to your server.** The application is the set of files in `processes/<app_name>/`. Let the assistant
+deploy them after your yes (`deploy_process` or an application package), or import them in the platform admin's
+application packages. If your portal still offers the Workflow upload, you can use it too.
 Production use needs a commercial licence: see [Licence and production use](#licence-and-production-use).
 
 ## What it is good for
@@ -103,14 +107,16 @@ tool.
 
 | Part                                                                 | What it does                                                                                                              | Where                                                                                    |
 |----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| **Application Engine** (`netgrif/application-engine-with-mcp:7.0.3`) | The backend: interprets Petriflow, REST API, and the engine MCP the assistant deploys and tests with, at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Frontend** (`netgrif/application-engine-frontend:7.0.3`)           | The portal your users work in, at `localhost:4200`                                                                        | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Builder** (`netgrif/application-builder:2.1.1-rc.3`)               | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Petriflow MCP** (`netgrif/petriflow-mcp:1.0.0`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Platform cluster** (`netgrif/admin`, `netgrif/gateway`, `netgrif/application-engine-worker`, `netgrif/search` 1.1.0) | The NAE 7.1.0 cluster: users, process routing, the root worker that interprets Petriflow and the search node; the REST API is behind the gateway at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml) |
+| **Engine MCP plugin** (`netgrif/mcp-nae-plugin:1.0.0`)               | The MCP server the assistant deploys and tests with; one per cluster, at `localhost:8700`                                  | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Frontend** (`netgrif/application-engine-frontend:7.1.0`)           | The portal your users work in, at `localhost:4200`                                                                        | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Builder** (`netgrif/application-builder:2.1.1-local`)              | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Petriflow MCP** (`netgrif/petriflow-mcp:1.1.2`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **MongoDB, Elasticsearch, Redis**                                    | Data, search and cache                                                                                                    | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Rules for the assistant**                                          | How to build, check and test a Netgrif application, and when to ask you                                                   | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
 | **Your application**                                                 | The Petriflow files the assistant writes, one folder per application (with a `hello_world` example)                       | [`processes/`](processes/README.md)                                                      |
-| **Your modules** (optional)                                          | Java code the engine loads at start                                                                                       | [`modules/`](modules/README.md)                                                          |
+| **Your plugins** (optional)                                          | Java services in their own containers that process actions call; the default way to add Java code                        | [`plugins/`](plugins/README.md)                                                          |
+| **Your modules** (optional)                                          | Java code the engine loads at start, only when a plugin cannot do it                                                      | [`modules/`](modules/README.md)                                                          |
 
 More about the stack, ports and commands: [nae/README.md](nae/README.md).
 
@@ -121,10 +127,14 @@ machine or server: Java runs inside the engine image, the databases in their own
 
 | Container           | Image                                       | Inside                                                                  | Port                         |
 |---------------------|---------------------------------------------|-------------------------------------------------------------------------|------------------------------|
-| `engine`            | `netgrif/application-engine-with-mcp:7.0.3` | Java 21 (Eclipse Temurin JRE), Spring Boot 4.1, Application Engine 7.0.3 | 8080                         |
-| `frontend`          | `netgrif/application-engine-frontend:7.0.3` | The portal: Netgrif Components 7.0.3 (Angular 17.3)                     | 4200                         |
-| `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
-| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.0.0`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
+| `nae-admin`         | `netgrif/admin:1.1.0`                       | Platform admin: users, processes, cluster nodes, applications         | 8888                         |
+| `nae-gateway`       | `netgrif/gateway:1.1.0`                     | The cluster entry point; the frontend calls it                         | 8080, 8800                   |
+| `nae-engine`        | `netgrif/application-engine-worker:1.1.0`   | Java 21, Spring Boot 4.1, NAE 7.1.0 root worker (REST 8080 inside) | 8082 (this machine only)     |
+| `nae-search`        | `netgrif/search:1.1.0`                      | Search node of the cluster (zone `z1`), over Elasticsearch             | 8600, 9600 (gRPC)            |
+| `nae-mcp-plugin`    | `netgrif/mcp-nae-plugin:1.0.0`              | The MCP server, registered with the admin node                  | 8700 (this machine only)     |
+| `frontend`          | `netgrif/application-engine-frontend:7.1.0` | The portal: Netgrif Components 7.1.0 (Angular)                          | 4200                         |
+| `builder`           | `netgrif/application-builder:2.1.1-local`   | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
+| `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.2`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
 | `nae-mongodb`       | `mongo:8.0.3`                               | MongoDB, single-node replica set `rs0`; limit 2 CPUs, 2 GB RAM          | 27017                        |
 | `nae-elasticsearch` | `elasticsearch:8.19.15`                     | Elasticsearch, single node, security off; limit 1.5 CPUs, 1.5 GB RAM     | 9200, 9300                   |
 | `nae-redis`         | `redis:8`                                   | Redis, cache and sessions                                               | 6379                         |
@@ -133,15 +143,20 @@ machine or server: Java runs inside the engine image, the databases in their own
 **What you need:**
 
 - **Docker** with Docker Compose v2 (Docker Desktop on Mac and Windows, Docker Engine on Linux), or Podman.
-- **Memory and CPU:** at least 8 GB RAM and 4 CPUs for Docker. MongoDB and Elasticsearch alone may take up to 3.5 GB.
-- **Disk:** about 1.7 GB of images to download on the first start, more once unpacked, plus your data and logs.
+- **Memory and CPU:** at least 12 GB RAM and 4 CPUs for Docker; 16 GB is comfortable. MongoDB and Elasticsearch alone may take up to 3.5 GB; the admin, gateway, worker, search node and MCP plugin add the rest.
+  The compose file limits the Java services (admin 1.5 GB, worker 2 GB, search node 1 GB, gateway 1 GB, MCP plugin 1 GB), so the
+  whole cluster takes at most about 10 GB. You can change the limits in `.env` (see [`.env.example`](.env.example)).
+- **Disk:** about 3 GB of images to download on the first start (the platform cluster images are larger than the old single engine), more once unpacked, plus your data and logs.
 - **Network** on the first start, to pull the images from Docker Hub.
 
 **On a server** (your company's Netgrif portal, a commercial licence for production):
 
 - The same images run the same way. Change the admin password in `docker-compose.yaml` before the first start.
-- The compose file publishes the database ports (27017, 9200, 9300, 6379) and the MCP port (3000) for local
-  development. On a server, remove them or bind them to `127.0.0.1`, and put the portal behind HTTPS.
+- The compose file publishes the database ports (27017, 9200, 9300, 6379), the search node (8600, 9600), the frontend
+  (4200) and the gateway (8080, 8800) for local development. The admin (8888), admin gRPC (9999), worker (8082), plugin (8700) and builder
+  (4300) are bound to `127.0.0.1`. On a server, remove the public ports or put them behind HTTPS.
+- The MCP plugin's `/mcp` is unauthenticated and acts as the admin account. It is a development tool: keep it on
+  `127.0.0.1`, never expose it.
 - On Linux hosts, Elasticsearch needs `vm.max_map_count` of at least 262144: `sudo sysctl -w vm.max_map_count=262144`.
 
 ### Folders and permissions
@@ -153,7 +168,8 @@ The stack needs Docker Compose v2 (`docker compose`, not `docker-compose`). The 
   (`init-perms`) sets the owner when the stack starts. You can read the files, but deleting them needs elevated
   rights: `sudo rm -rf nae/engine/logs/* nae/engine/storage/*` with Docker, or
   `podman unshare rm -rf nae/engine/logs/* nae/engine/storage/*` with rootless Podman.
-- `nae/engine/modules/`: modules you build, read by the engine.
+- `nae/engine/modules/`: modules you build, read by the root worker.
+- `plugins/<artifactId>/`: your plugins' sources; each is built into its own image by `docker compose`.
 
 On Docker Desktop (Mac, Windows) the builder may report that it cannot write to `processes/`. Then copy
 [`.env.example`](.env.example) to `.env` and set `PUID` and `PGID`.
