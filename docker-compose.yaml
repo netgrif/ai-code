@@ -1,22 +1,22 @@
 services:
 
   petriflow-mcp:
-    image: netgrif/petriflow-mcp:1.0.0
+    image: netgrif/petriflow-mcp:1.1.2
     environment:
       PETRIFLOW_MODE: LOCAL
     ports:
       - "3000:3000"
 
   builder:
-    image: netgrif/application-builder:2.1.1-rc.3
+    image: netgrif/application-builder:2.1.1-local
     ports:
-      - "127.0.0.1:4300:80"
+      - "127.0.0.1:4300:8080"
     environment:
       PROCESS_FILES_ENABLED: "true"
       PUID: "${PUID:-}"
       PGID: "${PGID:-}"
     healthcheck:
-      test: [ "CMD", "curl", "-sf", "http://localhost:80/" ]
+      test: [ "CMD", "curl", "-sf", "http://localhost:8080/" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -76,6 +76,8 @@ services:
       netgrif.otel.metrics.exporter: none
       netgrif.otel.logs.exporter: none
       netgrif.engine.security.server-patterns: /api/auth/signup,/api/auth/token/verify,/api/auth/reset,/api/auth/recover,/api/public/**,/v3/api-docs/public,/manage/health,/manage/health/liveness,/manage/health/readiness,/mcp/**
+      netgrif.engine.actions.imports: org.springframework.data.domain.PageRequest,org.springframework.data.mongodb.core.query.Criteria,org.springframework.data.domain.Page,org.springframework.data.mongodb.core.query.Query,org.springframework.data.domain.Pageable
+      netgrif.engine.security.jwt.private-key: file:/opt/netgrif/engine/certificates/private.der
       spring.ai.mcp.server.type: SYNC
       spring.ai.mcp.server.protocol: streamable
       spring.ai.mcp.server.name: nae-mcp
@@ -89,6 +91,7 @@ services:
       - ./nae/engine/logs:/opt/netgrif/engine/log:z
       - ./nae/engine/storage:/opt/netgrif/engine/storage:z
       - ./nae/engine/modules:/opt/netgrif/engine/modules/custom:ro,z
+      - ./nae/engine/certificates:/opt/netgrif/engine/certificates:z
     depends_on:
       init-perms:
         condition: service_completed_successfully

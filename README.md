@@ -12,7 +12,8 @@ always has the last word. Whatever an agent cannot solve goes to a person.
 [Watch: AI agents inside real processes](https://www.youtube.com/watch?v=Msmqxwey94g)
 
 **All you need is [Docker](https://www.docker.com/products/docker-desktop/) and any AI coding assistant.** Everything
-else runs in containers: no Java, Node or database to install.
+else runs in containers: no Java, Node or database to install. Only if you write your own Java modules
+you need Java 21 and Maven 3+.
 
 [![A Word brief goes to any AI coding assistant, it builds the onboarding app with roles, forms and demo users, HR, the manager and IT work in it at localhost:4200, and the next prototype is one sentence away](docs/media/demo.gif)](https://youtu.be/LpdUfdaEqT4)
 

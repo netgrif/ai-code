@@ -47,6 +47,11 @@ Load the matching skill before the task:
 - `test-process`: validate a process and run it on the local NAE.
 - `write-module`: custom NAE module (Java/Spring).
 
+For any design or change of Petriflow processes, load `generate-process` first,
+before brainstorming or any planning skill. Its architecture steps decide which
+processes exist; a design document or plan is written from that architecture,
+not the other way round.
+
 Do not run IDE "reformat code" on files in `.agents/skills/`: it breaks the code blocks
 inside the Markdown. Keep `name` equal to the folder name, and no `<` or `>` in
 the frontmatter.
@@ -54,9 +59,12 @@ the frontmatter.
 ## MCP servers
 
 - `petriflow-mcp` is the `petriflow-mcp` container of the compose stack, on
-  `localhost:3000`. Use it to validate (`validate_process`) and to look up Petriflow
-  versions and Action API.
-  Never write Petriflow or Action API syntax from memory.
+  `localhost:3000` (image 1.1.2). Use it to validate (`validate_process` with
+  `app_name`, `validate_action`), to look up Petriflow versions, components and the
+  Action API, and to generate an application manifest (`generate_app_manifest`).
+  Never write Petriflow or Action API syntax from memory. Two separate versions:
+  1.1.2 is the MCP server (image); the Petriflow language has its own version
+  (e.g. 1.0.9), which you read from the MCP and pass to `validate_process`.
 - `engine-mcp` works only while `engine` runs on `localhost:8080`.
   If it is not reachable, say so and stop. Do not fake results.
 
@@ -112,6 +120,8 @@ the test cases and users you created; deployed processes and the menu stay.
   `<app_name>/<process_name>` (e.g. `hello_world/hello_world`), unique across
   the whole NAE deployment. The file is `processes/<app_name>/<process_name>.xml`.
 - Use the latest Petriflow version from the Petriflow MCP unless pinned.
+- Pass `app_name` to `validate_process`; Petriflow MCP enforces
+  that the root process id is `<app_name>/<processId>`.
 - The user can edit the same files in the builder. Before you edit or deploy a
   process file, compare `git hash-object <file>` (first 8 characters) with the
   value you noted when you last read or wrote it in this session, or with the
@@ -119,7 +129,8 @@ the test cases and users you created; deployed processes and the menu stay.
   session. Re-read only files that differ, keep the user's changes and never
   revert them. After your last write of a task, put the new hashes in the README.
 - Every process change must pass `validate_process`. Do not hand-wave around errors.
-- Actions are short, use Action API methods, one concern each. Never use Grape,
+- Actions are validated with `validate_action` (Petriflow MCP 1.1.2 or newer) before the
+  process is validated. Actions are short, use Action API methods, one concern each. Never use Grape,
   meta-classes or other reflection. Longer or reusable code becomes a Petriflow
   function. Whole services become modules.
 

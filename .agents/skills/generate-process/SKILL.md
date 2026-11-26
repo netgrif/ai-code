@@ -25,7 +25,9 @@ validated.
 - No XML before the user approved the architecture (step 4).
 - Process id = `<app_name>/<process_name>`, unique across the whole NAE
   deployment (see Applications and naming).
-- `validate_process` after every change to a process file, until clean.
+- `validate_process` with `app_name` after every change to a process file, until
+  clean. Petriflow MCP requires the root id to be `<app_name>/<process_name>` when
+  `app_name` is set.
 - Two versions, do not mix them up: the *Petriflow version* is the language
   version from `list_versions`; the *process version* is the `<version>`
   element of the XML (a new process starts at `1.0.0`).
@@ -45,6 +47,8 @@ validated.
     - Read `petriflow://versions` (or tool `list_versions`) and take the latest
       semver, unless the user or project pins one.
     - Read `petriflow://versions/{version}/overview`.
+    - For form field components use `list_components` and `get_component`; never invent a
+      `<component><name>` value.
     - List the MCP resources and resource templates; read the schema and the
       examples for that version that match the problem (e.g. arcs, roles,
       caseRef, taskRef, user lists).
@@ -86,7 +90,10 @@ validated.
    embedding: see Quick reference. Set `<version>` by the rule in Critical
    rules.
 7. **Actions.** Before the first action, ask the user once per session:
-   "Should the actions be written by a subagent, or inline here?" Then, for
+   "Should the actions be written by a subagent, or inline here?" The question
+   is mandatory, also for one short action; do not answer it yourself. When
+   the architecture contains actions, put the question into the architecture
+   message (step 5) so that it costs no extra turn. Then, for
    each action, use the `generate-action` skill (in a subagent if chosen) and
    pass: process file path, event and phase, what the action must do, and the
    ids of fields/transitions/processes it uses.
@@ -303,8 +310,8 @@ Do not mark:
 When unsure, leave the field unmarked and tell the user which candidates you
 left out and why. Adding the attribute later is a process change, so the
 version rule in Critical rules applies. List the chosen fields with a reason
-in the architecture (step 5), in the README and in the report. A later menu
-(`generate-menu-import`) that filters by or shows a field needs it marked here.
+in the architecture (step 5), in the README and in the report. A later menu (`generate-menu-import`) that filters by or
+shows a field needs it marked here.
 
 ## Global roles
 
@@ -323,8 +330,8 @@ A role is declared in the process as `<role>`. With the attribute
   one process marks it, the others get separate local roles.
 
 **Prefer global roles when it makes sense.** Make a role global when it is a
-function of a person or an organization that makes sense outside one process
-(manager, hr, auditor, clerk), when several processes or applications use it,
+function of a person or an organization that makes sense outside one process (manager, hr, auditor, clerk), when several
+processes or applications use it,
 when the menu import uses it for allowed or banned roles, or when its user
 assignments should outlive new versions and redeploys of the process. Keep a
 role local when it only makes sense inside one process (e.g. `reviewer` of one
@@ -346,13 +353,16 @@ Rules:
 
 ## Quick reference
 
-| Need                  | Source                                                 |
-|-----------------------|--------------------------------------------------------|
-| Versions              | `petriflow://versions` / `list_versions`               |
-| Overview of a version | `petriflow://versions/{version}/overview`              |
-| Schema, examples      | MCP resource list / templates for that version         |
-| Action API            | `generate-action` skill (`list_actions`, `get_action`) |
-| Validate              | `test-process` skill (`validate_process`)              |
+| Need                  | Source                                                    |
+|-----------------------|-----------------------------------------------------------|
+| Versions              | `petriflow://versions` / `list_versions`                  |
+| Overview of a version | `petriflow://versions/{version}/overview`                 |
+| Schema, examples      | MCP resource list / templates for that version            |
+| Components            | `list_components`, `get_component`                        |
+| Action API            | `generate-action` skill (`list_actions`, `get_action`)    |
+| Validate              | `test-process` skill (`validate_process`)                 |
+| Action validation     | `validate_action` (see `generate-action`)                 |
+| Validate              | `test-process` skill (`validate_process` with `app_name`) |
 
 - **Channel:** an action of the sender navigates one caseRef field and fires a *system transition* in the referenced
   case. A system transition has no role
@@ -363,7 +373,8 @@ Rules:
   actually created (Prop. 1). A skip path empties the counting places with
   reset arcs.
 - **CRUD template:** `create` → places A, B; `update` loops on A; `read` on a
-  read arc to B; `delete` consumes A and B.
+  read arc to B; `delete` consumes A and B; `form` is a system transition on a
+  read arc to B that other processes embed by taskRef.
 
 ## Examples
 
@@ -433,7 +444,8 @@ Solution: do not bump the version. Check `list_processes`, then redeploy with
 Petriflow version used; process versions (new, unchanged, or old → new); the approved architecture (applications, full
 process
 ids); the indexed fields (`immediate="true"`) per process with the reason,
-and candidates left out; the roles, global or local with the reason; files written, including application READMEs; per file the
+and candidates left out; the roles, global or local with the reason; files written, including application READMEs; per
+file the
 `validate_process` result (issues → fixes → clean); actions written;
 Stage 2 result (including replaced processes and the role scenario matrix) or
 why it did not run; principle
@@ -441,13 +453,23 @@ deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
 
 ## Common mistakes
 
-- Writing XML before the user approved the architecture.
+- Writing XML before the user approved the architecture, or presenting the
+  architecture and writing the XML in the same turn because the user asked to
+  hurry.
+- Skipping `validate_process`, or downloading a schema or XSD elsewhere,
+  because the user said to skip it or the MCP is slow.
+- Deploying, creating cases or users, or executing tasks on the NAE to "check
+  the work" without the approval `test-process` requires.
+- Deciding that a number named in the requirement is fixed ("five reviewers")
+  instead of asking whether it changes.
 - Hardcoding a Petriflow version or copying the version/syntax of an old process.
 - One process with a copied transition per user (`approve_user_1..n`) when the
   number of users is runtime data.
 - Privacy through one shared role plus "users promise not to look".
 - An action that fires a user task or writes foreign fields that arcs depend
   on, instead of firing a system transition (channel).
+- Routing, waiting or permissions written in actions that arcs, places and
+  roles could express.
 - A variable arc whose weight is not tied to the number of cases created.
 - An action touching two or more other cases without failure handling (A3).
 - A data-centric process whose actions create, delete or call other cases.
@@ -456,6 +478,10 @@ deviations with reasons; then the "Try it now" hand-off block from `AGENTS.md`.
   one row.
 - A process id without the application prefix, or a prefix that does not match
   the folder name.
+- Calling `validate_process` without `app_name`, so the application-scoped id rule
+  is not enforced.
+- A `<component><name>` value that is not from `list_components` /
+  `get_component`.
 - A new data-centric process for an entity another application already owns.
 - Forgetting to create or update the application `README.md`.
 - A process map that is missing or out of sync with the Channels and

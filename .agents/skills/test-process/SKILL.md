@@ -31,8 +31,10 @@ Redeploying while iterating).
 2. Get the available Petriflow versions: read resource `petriflow://versions`;
    if resources aren't provided, call `list_versions`. Versions follow semver.
    Use the latest, unless the user or project pins another.
-3. Call `validate_process` with that version and the raw XML (check the tool
-   schema for exact parameter names).
+3. Call `validate_process` with that version, the raw XML and `app_name` (the
+   application folder name; check the tool schema for exact verbatim parameter
+   names). Petriflow MCP requires the process id to be `<app_name>/<process_name>`
+   when `app_name` is set.
 4. For every returned issue: quote it, locate the element in the XML, and
    propose a concrete fix as a diff. Group related issues.
 5. If validation against the latest version fails on constructs that belong to
