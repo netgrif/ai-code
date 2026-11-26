@@ -1,9 +1,8 @@
 # Local Netgrif Platform 1.1.0 cluster (NAE 7.1.0).
 #
 # The application engine runs as the root worker; the MCP server runs as a
-# cluster plugin (one per cluster) instead of inside the engine image. The
-# platform component images come from the Netgrif registry:
-#   docker login docker.nexus.netgrif.com
+# cluster plugin (one per cluster) instead of inside the engine image. All
+# images are pulled from Docker Hub.
 #
 # The frontend is the prebuilt 7.1.0 image. It talks to the gateway, which is
 # published on 8080 (the URL the image is built with) and 8800 (the gateway
@@ -69,7 +68,7 @@ services:
       - netgrif-platformnet
 
   nae-admin:
-    image: docker.nexus.netgrif.com/netgrif-admin:1.1.0
+    image: netgrif/admin:1.1.0
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8888/manage/health | grep UP" ]
@@ -107,7 +106,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   nae-gateway:
-    image: docker.nexus.netgrif.com/netgrif-gateway:1.1.0
+    image: netgrif/gateway:1.1.0
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8800/manage/health | grep UP" ]
@@ -146,7 +145,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   nae-search:
-    image: docker.nexus.netgrif.com/netgrif-search:1.1.0
+    image: netgrif/search:1.1.0
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8600/manage/health | grep UP" ]
@@ -191,7 +190,7 @@ services:
 
   nae-engine:
     # Root worker of the cluster. The MCP server is a separate plugin service.
-    image: docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0
+    image: netgrif/application-engine-worker:1.1.0
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "sh", "-c", "curl -sf http://localhost:8080/manage/health | grep UP" ]
@@ -256,7 +255,7 @@ services:
       - netgrif-platformnet
 
   nae-mcp-plugin:
-    image: docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0
+    image: netgrif/mcp-nae-plugin:1.0.0
     restart: unless-stopped
     environment:
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
@@ -267,6 +266,8 @@ services:
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_PASSWORD: *admin-password
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_WORKER_NAME: NETGRIF Root Worker
       NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_REALM_ID: Admin
+      NETGRIF_ENGINE_MCP_IMPERSONATION_MCP_TOKEN_KEY: 'AZ1Xaxvn/41I3zGL657aBDFdTdrfx9Lx6vv25ReY5pM='
+      NETGRIF_ENGINE_MCP_PLUGIN_ADMIN_DEFAULT_USER_PASSWORD: password
       NETGRIF_PLUGIN_SERVICE_HOST: nae-mcp-plugin
       NETGRIF_PLUGIN_SERVICE_GRPC_PORT: 9091
       NETGRIF_PLUGIN_SERVICE_ADMIN_NODE_HOST: nae-admin

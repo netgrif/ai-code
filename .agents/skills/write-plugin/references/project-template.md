@@ -74,21 +74,6 @@ Spring auto-configuration import).
         <plugin.registration-name>helloPlugin</plugin.registration-name>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>netgrif-nexus-releases</id>
-            <url>https://nexus.netgrif.com/repository/maven-public</url>
-            <snapshots><enabled>false</enabled></snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>netgrif-nexus-releases</id>
-            <url>https://nexus.netgrif.com/repository/maven-public</url>
-            <snapshots><enabled>false</enabled></snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
     <dependencies>
         <dependency>
             <groupId>com.netgrif</groupId>
@@ -128,7 +113,7 @@ Spring auto-configuration import).
             <plugin>
                 <groupId>com.netgrif</groupId>
                 <artifactId>nae-plugin-maven-plugin</artifactId>
-                <version>1.0.2</version>
+                <version>1.0.3</version>
                 <configuration>
                     <registrationName>${plugin.registration-name}</registrationName>
                     <apiVersion>1.0.0</apiVersion>

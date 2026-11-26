@@ -94,8 +94,8 @@ the frontmatter.
 ## Project setup
 
 Prerequisites: Docker with Compose, and (only when developing plugins or modules)
-Java 21 and Maven 3+. The platform images are in `docker.nexus.netgrif.com`, so log in first:
-`docker login docker.nexus.netgrif.com`. **Warn the developer** that developing a
+Java 21 and Maven 3+. All images come from Docker Hub, so no registry login is
+needed. **Warn the developer** that developing a
 plugin or module requires Java 21 and Maven 3+ installed; if they are missing, say so
 and stop before plugin or module work.
 
@@ -240,7 +240,7 @@ engine container (owned by its user). Read logs from there, never write there.
 **Plugins.**
 
 - Sources in `plugins/<artifactId>/`: Spring Boot 4.1, `plugin-client` 1.1.0,
-  `nae-plugin-maven-plugin` 1.0.2, built with
+  `nae-plugin-maven-plugin` 1.0.3, built with
   `mvn -f plugins/<artifactId>/pom.xml clean package`. Each plugin has its own
   `compose.yaml`, listed under `include:` in the root `docker-compose.yaml`;
   run it with `docker compose up -d --build <artifactId>` from the repository root.
@@ -268,7 +268,7 @@ engine container (owned by its user). Read logs from there, never write there.
 - Do not change image versions in `docker-compose.yaml` without asking. The
   platform images (admin, gateway, root worker) and the frontend are released
   together; keep them on the matching versions. The MCP plugin version is
-  independent (`netgrif-nae-mcp-plugin`).
+  independent (`netgrif/mcp-nae-plugin`).
 
 ## Hand-off to the user
 
@@ -300,8 +300,7 @@ If the processes are not deployed, do not write step 3 as if they were. Say they
 are not deployed yet and why. Offer: "ask me to deploy them" (the MCP plugin
 `deploy_process` or an application package). Do not offer the Workflow upload
 unless you checked it. If the app is not running, the one step is: start Docker,
-log in to `docker.nexus.netgrif.com`, then run `docker compose up -d` in the
-project folder.
+then run `docker compose up -d` in the project folder.
 
 ## Testing and definition of done
 

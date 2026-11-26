@@ -27,12 +27,12 @@ docker compose down                   # stop and remove containers
 | Service             | Image                                       | Ports      | Purpose                                                  |
 |---------------------|---------------------------------------------|------------|----------------------------------------------------------|
 | `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.2`               | 3000       | Petriflow validation and docs for AI agents              |
-| `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | 4300 → 80  | Visual editor of the files in `processes/`               |
-| `nae-admin`         | `docker.nexus.netgrif.com/netgrif-admin:1.1.0` | 8888, 9999 (this machine only) | Cluster admin: users, processes, nodes, applications     |
-| `nae-gateway`       | `docker.nexus.netgrif.com/netgrif-gateway:1.1.0` | 8080 → 8800, 8800 → 8800 | Cluster entry point; the frontend calls it             |
-| `nae-engine`        | `docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0` | 8082 → 8080 | NAE 7.1.0 root worker                              |
-| `nae-search`        | `docker.nexus.netgrif.com/netgrif-search:1.1.0` | 8600, 9600 | Cluster search node (zone `z1`) over Elasticsearch  |
-| `nae-mcp-plugin`    | `docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0` | 8700 → 8700 | Engine MCP server as a cluster plugin         |
+| `builder`           | `netgrif/application-builder:2.1.1-local`    | 4300 → 80  | Visual editor of the files in `processes/`               |
+| `nae-admin`         | `netgrif/admin:1.1.0`                       | 8888, 9999 (this machine only) | Cluster admin: users, processes, nodes, applications     |
+| `nae-gateway`       | `netgrif/gateway:1.1.0`                     | 8080 → 8800, 8800 → 8800 | Cluster entry point; the frontend calls it             |
+| `nae-engine`        | `netgrif/application-engine-worker:1.1.0`   | 8082 → 8080 | NAE 7.1.0 root worker                              |
+| `nae-search`        | `netgrif/search:1.1.0`                      | 8600, 9600 | Cluster search node (zone `z1`) over Elasticsearch  |
+| `nae-mcp-plugin`    | `netgrif/mcp-nae-plugin:1.0.0`              | 8700 → 8700 | Engine MCP server as a cluster plugin         |
 | `init-perms`        | `busybox:1.37`                              | none       | One-off job: owner of `engine/logs` and `engine/storage` |
 | `frontend`          | `netgrif/application-engine-frontend:7.1.0` | 4200 → 80  | Standard Netgrif frontend (single-page app)              |
 | `nae-mongodb`       | `mongo:8.0.3` (replica set `rs0`)           | 27017      | Database                                                 |

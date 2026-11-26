@@ -34,9 +34,8 @@ cd <your-app>
 docker compose up -d
 ```
 
-The first start downloads the platform admin, gateway and root worker from
-`docker.nexus.netgrif.com` (log in first: `docker login docker.nexus.netgrif.com`) and the frontend, MCP and databases
-from Docker Hub. It takes a few minutes; later starts take seconds. Netgrif runs at
+The first start downloads all images (platform admin, gateway, root worker, search node, frontend, MCP and databases)
+from Docker Hub; no login is needed. It takes a few minutes; later starts take seconds. Netgrif runs at
 **http://localhost:4200** once `curl http://localhost:8080/manage/health` returns `UP` (that is the gateway). That
 frontend is for the users of your application (realm `app-users`, created by the assistant together with its test users).
 The administrator `admin` signs in at **http://localhost:8888** and chooses the realm there; its password is set in
@@ -108,10 +107,10 @@ tool.
 
 | Part                                                                 | What it does                                                                                                              | Where                                                                                    |
 |----------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| **Platform cluster** (`netgrif-admin`, `netgrif-gateway`, `netgrif-nae-worker`, `netgrif-search` 1.1.0) | The NAE 7.1.0 cluster: users, process routing, the root worker that interprets Petriflow and the search node; the REST API is behind the gateway at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml) |
-| **Engine MCP plugin** (`netgrif-nae-mcp-plugin:1.0.0`)               | The MCP server the assistant deploys and tests with; one per cluster, at `localhost:8700`                                  | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Platform cluster** (`netgrif/admin`, `netgrif/gateway`, `netgrif/application-engine-worker`, `netgrif/search` 1.1.0) | The NAE 7.1.0 cluster: users, process routing, the root worker that interprets Petriflow and the search node; the REST API is behind the gateway at `localhost:8080` | [`docker-compose.yaml`](docker-compose.yaml) |
+| **Engine MCP plugin** (`netgrif/mcp-nae-plugin:1.0.0`)               | The MCP server the assistant deploys and tests with; one per cluster, at `localhost:8700`                                  | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Frontend** (`netgrif/application-engine-frontend:7.1.0`)           | The portal your users work in, at `localhost:4200`                                                                        | [`docker-compose.yaml`](docker-compose.yaml)                                             |
-| **Builder** (`netgrif/application-builder:2.1.1-rc.3`)               | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
+| **Builder** (`netgrif/application-builder:2.1.1-local`)              | A visual editor for the process files in `processes/`, at `localhost:4300`                                                | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Petriflow MCP** (`netgrif/petriflow-mcp:1.1.2`)                    | Petriflow knowledge and validation for the assistant, at `localhost:3000`                                                 | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **MongoDB, Elasticsearch, Redis**                                    | Data, search and cache                                                                                                    | [`docker-compose.yaml`](docker-compose.yaml)                                             |
 | **Rules for the assistant**                                          | How to build, check and test a Netgrif application, and when to ask you                                                   | [`AGENTS.md`](AGENTS.md), [`.agents/skills/`](.agents/skills/), [`.mcp.json`](.mcp.json) |
@@ -128,13 +127,13 @@ machine or server: Java runs inside the engine image, the databases in their own
 
 | Container           | Image                                       | Inside                                                                  | Port                         |
 |---------------------|---------------------------------------------|-------------------------------------------------------------------------|------------------------------|
-| `nae-admin`         | `docker.nexus.netgrif.com/netgrif-admin:1.1.0` | Platform admin: users, processes, cluster nodes, applications         | 8888                         |
-| `nae-gateway`       | `docker.nexus.netgrif.com/netgrif-gateway:1.1.0` | The cluster entry point; the frontend calls it                         | 8080, 8800                   |
-| `nae-engine`        | `docker.nexus.netgrif.com/netgrif-nae-worker:1.1.0` | Java 21, Spring Boot 4.1, NAE 7.1.0 root worker (REST 8080 inside) | 8082 (this machine only)     |
-| `nae-search`        | `docker.nexus.netgrif.com/netgrif-search:1.1.0` | Search node of the cluster (zone `z1`), over Elasticsearch             | 8600, 9600 (gRPC)            |
-| `nae-mcp-plugin`    | `docker.nexus.netgrif.com/netgrif-nae-mcp-plugin:1.0.0` | The MCP server, registered with the admin node                  | 8700 (this machine only)     |
+| `nae-admin`         | `netgrif/admin:1.1.0`                       | Platform admin: users, processes, cluster nodes, applications         | 8888                         |
+| `nae-gateway`       | `netgrif/gateway:1.1.0`                     | The cluster entry point; the frontend calls it                         | 8080, 8800                   |
+| `nae-engine`        | `netgrif/application-engine-worker:1.1.0`   | Java 21, Spring Boot 4.1, NAE 7.1.0 root worker (REST 8080 inside) | 8082 (this machine only)     |
+| `nae-search`        | `netgrif/search:1.1.0`                      | Search node of the cluster (zone `z1`), over Elasticsearch             | 8600, 9600 (gRPC)            |
+| `nae-mcp-plugin`    | `netgrif/mcp-nae-plugin:1.0.0`              | The MCP server, registered with the admin node                  | 8700 (this machine only)     |
 | `frontend`          | `netgrif/application-engine-frontend:7.1.0` | The portal: Netgrif Components 7.1.0 (Angular)                          | 4200                         |
-| `builder`           | `netgrif/application-builder:2.1.1-rc.3`    | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
+| `builder`           | `netgrif/application-builder:2.1.1-local`   | The visual process editor (Angular 17.3)                                | 4300 (this machine only)     |
 | `petriflow-mcp`     | `netgrif/petriflow-mcp:1.1.2`               | Petriflow knowledge and validation for the AI assistant                 | 3000                         |
 | `nae-mongodb`       | `mongo:8.0.3`                               | MongoDB, single-node replica set `rs0`; limit 2 CPUs, 2 GB RAM          | 27017                        |
 | `nae-elasticsearch` | `elasticsearch:8.19.15`                     | Elasticsearch, single node, security off; limit 1.5 CPUs, 1.5 GB RAM     | 9200, 9300                   |
@@ -144,12 +143,11 @@ machine or server: Java runs inside the engine image, the databases in their own
 **What you need:**
 
 - **Docker** with Docker Compose v2 (Docker Desktop on Mac and Windows, Docker Engine on Linux), or Podman.
-- **Access to the Netgrif registry:** `docker login docker.nexus.netgrif.com` (the platform images are private).
 - **Memory and CPU:** at least 12 GB RAM and 4 CPUs for Docker; 16 GB is comfortable. MongoDB and Elasticsearch alone may take up to 3.5 GB; the admin, gateway, worker, search node and MCP plugin add the rest.
   The compose file limits the Java services (admin 1.5 GB, worker 2 GB, search node 1 GB, gateway 1 GB, MCP plugin 1 GB), so the
   whole cluster takes at most about 10 GB. You can change the limits in `.env` (see [`.env.example`](.env.example)).
 - **Disk:** about 3 GB of images to download on the first start (the platform cluster images are larger than the old single engine), more once unpacked, plus your data and logs.
-- **Network** on the first start, to pull the images from Docker Hub and the Netgrif registry.
+- **Network** on the first start, to pull the images from Docker Hub.
 
 **On a server** (your company's Netgrif portal, a commercial licence for production):
 
